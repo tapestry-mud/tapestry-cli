@@ -5,6 +5,34 @@ const path = require('path');
 const { spawnSync, spawn } = require('child_process');
 const { readYaml } = require('../util/yaml');
 const { writePid, readPid, clearPid } = require('./process-tracker');
+const fetch = require('node-fetch');
+const { DEFAULT_REGISTRY } = require('./registry-client');
+
+const NAMED_CHANNELS = ['nightly', 'stable'];
+
+async function resolveDockerTag(config) {
+  if (!NAMED_CHANNELS.includes(config.version)) {
+    return config.version;
+  }
+  let res;
+  try {
+    res = await fetch(`${DEFAULT_REGISTRY}/engine-channels/${config.version}`);
+  } catch {
+    console.warn('Could not reach registry to resolve channel, using version string directly.');
+    return config.version;
+  }
+  if (res.status === 404) {
+    throw new Error(
+      `Channel '${config.version}' not found in registry. Run \`tapestry engine versions\` to see available channels.`
+    );
+  }
+  if (!res.ok) {
+    console.warn(`Registry returned ${res.status} resolving channel, using version string directly.`);
+    return config.version;
+  }
+  const { docker_tag } = await res.json();
+  return docker_tag;
+}
 
 const ENGINE_REPO = 'https://github.com/tapestry-mud/tapestry.git';
 const DEFAULT_IMAGE = 'ghcr.io/tapestry-mud/tapestry';
@@ -233,7 +261,8 @@ function readEngineConfig(cwd) {
 async function installEngine(cwd) {
   const config = readEngineConfig(cwd);
   if (config.mode === 'docker') {
-    dockerPull(config.image, config.version);
+    const tag = await resolveDockerTag(config);
+    dockerPull(config.image, tag);
   } else if (config.mode === 'binary') {
     binaryInstall(config.version, config.installDir);
   } else {
@@ -244,7 +273,8 @@ async function installEngine(cwd) {
 async function updateEngine(cwd) {
   const config = readEngineConfig(cwd);
   if (config.mode === 'docker') {
-    dockerPull(config.image, config.version);
+    const tag = await resolveDockerTag(config);
+    dockerPull(config.image, tag);
   } else if (config.mode === 'binary') {
     binaryInstall(config.version, config.installDir);
   } else {

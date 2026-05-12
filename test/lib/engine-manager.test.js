@@ -1,5 +1,8 @@
 'use strict';
 
+jest.mock('node-fetch');
+const fetch = require('node-fetch');
+
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -26,10 +29,102 @@ beforeEach(() => {
   spawnSync.mockClear();
   spawn.mockClear();
   spawn.mockReturnValue({ pid: 9999, unref: jest.fn() });
+  fetch.mockReset();
 });
 
 afterEach(() => {
   fs.rmSync(tmpDir, { recursive: true });
+});
+
+// ── resolveDockerTag ────────────────────────────────────────────────────────
+
+describe('channel resolution -- docker mode', () => {
+  beforeEach(() => {
+    writeYaml(path.join(tmpDir, 'tapestry.yaml'), {
+      name: 'my-game',
+      engine: { version: 'nightly', mode: 'docker' },
+    });
+    fetch.mockReset();
+  });
+
+  it('resolves nightly channel to docker_tag from registry before pulling', async () => {
+    fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ channel: 'nightly', docker_tag: 'edge', version: 'edge' }),
+    });
+
+    await installEngine(tmpDir);
+
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/engine-channels/nightly'));
+    expect(spawnSync).toHaveBeenCalledWith(
+      'docker', ['pull', 'ghcr.io/tapestry-mud/tapestry:edge'],
+      { stdio: 'inherit' }
+    );
+  });
+
+  it('resolves stable channel to docker_tag from registry', async () => {
+    writeYaml(path.join(tmpDir, 'tapestry.yaml'), {
+      name: 'my-game',
+      engine: { version: 'stable', mode: 'docker' },
+    });
+    fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ channel: 'stable', docker_tag: '0.0.5', version: '0.0.5' }),
+    });
+
+    await installEngine(tmpDir);
+
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/engine-channels/stable'));
+    expect(spawnSync).toHaveBeenCalledWith(
+      'docker', ['pull', 'ghcr.io/tapestry-mud/tapestry:0.0.5'],
+      { stdio: 'inherit' }
+    );
+  });
+
+  it('uses version string directly for semver (no registry call)', async () => {
+    writeYaml(path.join(tmpDir, 'tapestry.yaml'), {
+      name: 'my-game',
+      engine: { version: '0.0.5', mode: 'docker' },
+    });
+
+    await installEngine(tmpDir);
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(spawnSync).toHaveBeenCalledWith(
+      'docker', ['pull', 'ghcr.io/tapestry-mud/tapestry:0.0.5'],
+      { stdio: 'inherit' }
+    );
+  });
+
+  it('throws with helpful message when channel returns 404', async () => {
+    fetch.mockResolvedValue({ ok: false, status: 404 });
+
+    await expect(installEngine(tmpDir)).rejects.toThrow(
+      "Channel 'nightly' not found in registry"
+    );
+  });
+
+  it('throws pointing to engine versions command on 404', async () => {
+    fetch.mockResolvedValue({ ok: false, status: 404 });
+
+    await expect(installEngine(tmpDir)).rejects.toThrow('tapestry engine versions');
+  });
+
+  it('falls back to version string when registry is unreachable', async () => {
+    fetch.mockRejectedValue(new Error('ECONNREFUSED'));
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await installEngine(tmpDir);
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not reach registry'));
+    expect(spawnSync).toHaveBeenCalledWith(
+      'docker', ['pull', 'ghcr.io/tapestry-mud/tapestry:nightly'],
+      { stdio: 'inherit' }
+    );
+    warnSpy.mockRestore();
+  });
 });
 
 // ── readEngineConfig ────────────────────────────────────────────────────────
