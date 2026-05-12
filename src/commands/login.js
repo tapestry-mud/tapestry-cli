@@ -2,7 +2,7 @@
 
 const fetch = require('node-fetch');
 const { saveToken } = require('../lib/auth');
-const { DEFAULT_REGISTRY } = require('../lib/registry-client');
+const { DEFAULT_REGISTRY, throwIfError } = require('../lib/registry-client');
 const { createInterface, ask, askPassword } = require('../util/prompt');
 
 async function promptCredentials() {
@@ -27,10 +27,7 @@ async function login({ email, password } = {}, { registryUrl = DEFAULT_REGISTRY 
     body: JSON.stringify({ email, password }),
   });
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Login failed (${res.status})`);
-  }
+  await throwIfError(res, 'Login failed');
 
   const { token } = await res.json();
   saveToken(token);

@@ -16,6 +16,18 @@ function validatePackageName(name) {
   }
 }
 
+async function throwIfError(res, context) {
+  if (res.status === 429) {
+    const retryAfter = res.headers.get('retry-after');
+    const hint = retryAfter ? ` Try again in ${Math.ceil(Number(retryAfter) / 60)} min.` : '';
+    throw new Error(`Rate limit exceeded.${hint}`);
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `${context} (${res.status})`);
+  }
+}
+
 async function fetchPackageMetadata(name, registryUrl = DEFAULT_REGISTRY) {
   validatePackageName(name);
   const url = `${registryUrl}/v1/packages/${name}`;
@@ -43,4 +55,4 @@ async function fetchTarball(url) {
   return res.buffer();
 }
 
-module.exports = { fetchPackageMetadata, fetchTarball, DEFAULT_REGISTRY };
+module.exports = { fetchPackageMetadata, fetchTarball, throwIfError, DEFAULT_REGISTRY };

@@ -2,7 +2,7 @@
 
 const fetch = require('node-fetch');
 const { requireToken } = require('../lib/auth');
-const { DEFAULT_REGISTRY } = require('../lib/registry-client');
+const { DEFAULT_REGISTRY, throwIfError } = require('../lib/registry-client');
 const { createInterface, askPassword } = require('../util/prompt');
 
 async function changePassword({ registryUrl = DEFAULT_REGISTRY } = {}) {
@@ -23,10 +23,7 @@ async function changePassword({ registryUrl = DEFAULT_REGISTRY } = {}) {
       },
       body: JSON.stringify({ currentPassword, newPassword }),
     });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `Change password failed (${res.status})`);
-    }
+    await throwIfError(res, 'Change password failed');
     console.log('Password changed.');
   } finally {
     rl.close();

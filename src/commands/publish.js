@@ -9,7 +9,7 @@ const { readYaml } = require('../util/yaml');
 const { validate } = require('./validate');
 const { buildTarball, computeIntegrity } = require('../lib/tarball-builder');
 const { requireToken } = require('../lib/auth');
-const { DEFAULT_REGISTRY } = require('../lib/registry-client');
+const { DEFAULT_REGISTRY, throwIfError } = require('../lib/registry-client');
 
 async function publish({ cwd = process.cwd(), registryUrl = DEFAULT_REGISTRY } = {}) {
   validate({ cwd });
@@ -45,10 +45,7 @@ async function publish({ cwd = process.cwd(), registryUrl = DEFAULT_REGISTRY } =
       body: form,
     });
 
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `Publish failed (${res.status})`);
-    }
+    await throwIfError(res, 'Publish failed');
 
     const result = await res.json();
     console.log(`  Published ${result.name}@${result.version}`);
