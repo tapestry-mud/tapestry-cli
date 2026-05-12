@@ -21,6 +21,7 @@ const { outdated } = require('../src/commands/outdated');
 const { engineInstall, engineUpdate, engineInfo } = require('../src/commands/engine');
 const { startCmd } = require('../src/commands/start');
 const { stopCmd } = require('../src/commands/stop');
+const { changePassword } = require('../src/commands/change-password');
 
 const program = new Command();
 
@@ -279,6 +280,18 @@ program
   .action(async () => {
     try {
       await stopCmd();
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('change-password')
+  .description('Change your registry account password')
+  .action(async () => {
+    try {
+      await changePassword();
     } catch (e) {
       console.error(`error: ${e.message}`);
       process.exit(1);
