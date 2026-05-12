@@ -22,6 +22,7 @@ const { engineInstall, engineUpdate, engineInfo } = require('../src/commands/eng
 const { startCmd } = require('../src/commands/start');
 const { stopCmd } = require('../src/commands/stop');
 const { changePassword } = require('../src/commands/change-password');
+const { unpublish } = require('../src/commands/unpublish');
 
 const program = new Command();
 
@@ -292,6 +293,19 @@ program
   .action(async () => {
     try {
       await changePassword();
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('unpublish <package>')
+  .description('Remove a package version or all versions from the registry')
+  .option('--force', 'Admin override: bypass ownership check')
+  .action(async (pkg, options) => {
+    try {
+      await unpublish(pkg, { force: !!options.force });
     } catch (e) {
       console.error(`error: ${e.message}`);
       process.exit(1);
