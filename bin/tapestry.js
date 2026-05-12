@@ -2,6 +2,7 @@
 'use strict';
 
 const { Command } = require('commander');
+const { version } = require('../package.json');
 const { init } = require('../src/commands/init');
 const { createPack } = require('../src/commands/create-pack');
 const { install } = require('../src/commands/install');
@@ -29,7 +30,7 @@ const program = new Command();
 program
   .name('tapestry')
   .description('Tapestry Package Manager')
-  .version('0.1.0');
+  .version(version);
 
 program
   .command('init')
