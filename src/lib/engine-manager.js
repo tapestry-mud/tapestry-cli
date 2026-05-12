@@ -16,7 +16,7 @@ async function resolveDockerTag(config) {
   }
   let res;
   try {
-    res = await fetch(`${DEFAULT_REGISTRY}/engine-channels/${config.version}`);
+    res = await fetch(`${DEFAULT_REGISTRY}/v1/engine-channels/${config.version}`);
   } catch {
     console.warn('Could not reach registry to resolve channel, using version string directly.');
     return config.version;

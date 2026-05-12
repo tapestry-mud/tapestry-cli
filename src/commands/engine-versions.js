@@ -4,7 +4,7 @@ const fetch = require('node-fetch');
 const { DEFAULT_REGISTRY } = require('../lib/registry-client');
 
 async function engineVersions() {
-  const res = await fetch(`${DEFAULT_REGISTRY}/engine-channels`);
+  const res = await fetch(`${DEFAULT_REGISTRY}/v1/engine-channels`);
   if (!res.ok) {
     throw new Error(`Registry error ${res.status}`);
   }
