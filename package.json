@@ -1,6 +1,6 @@
 {
   "name": "@tapestry-mud/cli",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "CLI for the Tapestry MUD engine",
   "bin": {
     "tapestry": "./bin/tapestry.js"
@@ -17,7 +17,7 @@
     "js-yaml": "^4.1.0",
     "node-fetch": "^2.7.0",
     "semver": "^7.6.2",
-    "tar": "^6.2.1",
+    "tar": "^7.5.15",
     "zod": "^3.22.4"
   },
   "devDependencies": {
