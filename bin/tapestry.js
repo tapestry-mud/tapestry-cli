@@ -20,6 +20,7 @@ const { info } = require('../src/commands/info');
 const { list } = require('../src/commands/list');
 const { outdated } = require('../src/commands/outdated');
 const { engineInstall, engineUpdate, engineInfo } = require('../src/commands/engine');
+const { engineVersions } = require('../src/commands/engine-versions');
 const { startCmd } = require('../src/commands/start');
 const { stopCmd } = require('../src/commands/stop');
 const { changePassword } = require('../src/commands/change-password');
@@ -258,6 +259,18 @@ engineCmd
   .action(() => {
     try {
       engineInfo();
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+engineCmd
+  .command('versions')
+  .description('List available engine channels from the registry')
+  .action(async () => {
+    try {
+      await engineVersions();
     } catch (e) {
       console.error(`error: ${e.message}`);
       process.exit(1);
