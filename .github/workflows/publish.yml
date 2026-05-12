@@ -18,6 +18,4 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
       - run: npm ci
-      - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ''
+      - run: unset NODE_AUTH_TOKEN && npm publish --provenance --access public
