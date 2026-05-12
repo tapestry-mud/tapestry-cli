@@ -1,5 +1,5 @@
 {
-  "name": "@tapestry/cli",
+  "name": "@tapestry-mud/cli",
   "version": "0.1.0",
   "description": "CLI for the Tapestry MUD engine",
   "bin": {
