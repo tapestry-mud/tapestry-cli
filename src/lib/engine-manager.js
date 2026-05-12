@@ -304,7 +304,8 @@ async function startEngine(cwd) {
     throw new Error('server.yaml not found in the current directory.');
   }
   if (config.mode === 'docker') {
-    dockerStart(config.projectName, config.image, config.version, packsDir, serverYamlPath);
+    const tag = await resolveDockerTag(config);
+    dockerStart(config.projectName, config.image, tag, packsDir, serverYamlPath);
   } else if (config.mode === 'binary') {
     binaryStart(config.version, config.installDir, packsDir, serverYamlPath, cwd);
   } else {
