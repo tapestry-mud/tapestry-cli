@@ -108,6 +108,7 @@ describe('docker mode', () => {
 
     it('throws when docker pull fails', async () => {
       spawnSync.mockReturnValueOnce({ status: 1 });
+      spawnSync.mockReturnValueOnce({ status: 1 });
       await expect(installEngine(tmpDir)).rejects.toThrow('docker pull failed');
     });
   });

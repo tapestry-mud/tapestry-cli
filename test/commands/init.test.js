@@ -30,7 +30,7 @@ test('creates tapestry.yaml with project name derived from directory', () => {
   }
 });
 
-test('tapestry.yaml includes engine config and empty dependencies', () => {
+test('tapestry.yaml includes engine config and default dependencies', () => {
   {
     const projectDir = path.join(tmpDir, 'my-game');
     fs.mkdirSync(projectDir);
@@ -42,7 +42,9 @@ test('tapestry.yaml includes engine config and empty dependencies', () => {
       image: 'ghcr.io/tapestry-mud/tapestry',
     });
     expect(manifest.dependencies).toBeDefined();
-    expect(Object.keys(manifest.dependencies)).toHaveLength(0);
+    expect(Object.keys(manifest.dependencies)).toHaveLength(2);
+    expect(manifest.dependencies).toHaveProperty('@tapestry/core');
+    expect(manifest.dependencies).toHaveProperty('@tapestry/example-pack');
   }
 });
 
