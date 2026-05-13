@@ -28,10 +28,12 @@ async function throwIfError(res, context) {
   }
 }
 
-async function fetchPackageMetadata(name, registryUrl = DEFAULT_REGISTRY) {
+async function fetchPackageMetadata(name, registryUrl = DEFAULT_REGISTRY, token = null) {
   validatePackageName(name);
   const url = `${registryUrl}/v1/packages/${name}`;
-  const res = await fetch(url);
+  const headers = {};
+  if (token) { headers['Authorization'] = `Bearer ${token}`; }
+  const res = await fetch(url, { headers });
   if (!res.ok) {
     if (res.status === 404) {
       throw new Error(`Package ${name} not found in registry`);
@@ -46,8 +48,13 @@ async function fetchPackageMetadata(name, registryUrl = DEFAULT_REGISTRY) {
   }
 }
 
-async function fetchTarball(url) {
-  const res = await fetch(url);
+async function fetchTarball(url, token = null) {
+  const headers = {};
+  if (token) { headers['Authorization'] = `Bearer ${token}`; }
+  const res = await fetch(url, { headers });
+  if (res.status === 401) {
+    throw new Error('pack is private - run tapestry login first');
+  }
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`Tarball download failed: ${res.status}: ${body}`);
@@ -55,4 +62,51 @@ async function fetchTarball(url) {
   return res.buffer();
 }
 
-module.exports = { fetchPackageMetadata, fetchTarball, throwIfError, DEFAULT_REGISTRY };
+async function fetchPreset(name, registryUrl = DEFAULT_REGISTRY) {
+  const url = `${registryUrl.replace(/\/$/, '')}/v1/presets/${name}`;
+  const res = await fetch(url);
+  await throwIfError(res, `Failed to fetch preset '${name}'`);
+  return res.json();
+}
+
+async function patchDistTag(packName, tag, version, token, registryUrl = DEFAULT_REGISTRY) {
+  validatePackageName(packName);
+  const url = `${registryUrl.replace(/\/$/, '')}/v1/packages/${packName}/dist-tags/${tag}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ version }),
+  });
+  await throwIfError(res, `Failed to set dist-tag ${tag} on ${packName}`);
+  return res.json();
+}
+
+async function listDistTags(packName, registryUrl = DEFAULT_REGISTRY) {
+  validatePackageName(packName);
+  const url = `${registryUrl.replace(/\/$/, '')}/v1/packages/${packName}/dist-tags`;
+  const res = await fetch(url);
+  await throwIfError(res, `Failed to fetch dist-tags for ${packName}`);
+  return res.json();
+}
+
+async function patchPreset(name, payload, token, registryUrl = DEFAULT_REGISTRY) {
+  const url = `${registryUrl.replace(/\/$/, '')}/v1/admin/presets/${name}`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  await throwIfError(res, `Failed to update preset '${name}'`);
+  return res.json();
+}
+
+module.exports = {
+  fetchPackageMetadata, fetchTarball, throwIfError, DEFAULT_REGISTRY,
+  fetchPreset, patchDistTag, listDistTags, patchPreset,
+};
