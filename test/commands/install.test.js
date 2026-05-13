@@ -6,6 +6,9 @@ const path = require('path');
 
 jest.mock('../../src/lib/registry-client');
 jest.mock('../../src/lib/tarball');
+jest.mock('../../src/lib/auth');
+
+const { loadToken } = require('../../src/lib/auth');
 
 const { fetchPackageMetadata, fetchTarball } = require('../../src/lib/registry-client');
 const { verifyIntegrity, saveTarball, extractTarball } = require('../../src/lib/tarball');
@@ -44,6 +47,7 @@ beforeEach(() => {
   verifyIntegrity.mockReset();
   saveTarball.mockReset();
   extractTarball.mockReset();
+  loadToken.mockReturnValue(null);
   // Default: write a minimal pack manifest so installResolved can read it after extraction.
   extractTarball.mockImplementation(async (_tarPath, destDir) => {
     fs.mkdirSync(destDir, { recursive: true });
@@ -187,5 +191,47 @@ describe('install @scope/name (with package arg)', () => {
   it('throws on invalid package name format', async () => {
     writeProjectManifest(tmpDir, {});
     await expect(install('not-scoped', { cwd: tmpDir })).rejects.toThrow('Invalid package name');
+  });
+});
+
+describe('auth token forwarding', () => {
+  it('passes token to fetchPackageMetadata when logged in', async () => {
+    writeProjectManifest(tmpDir, { '@tapestry/core': '^1.0.0' });
+    loadToken.mockReturnValue('user-token');
+    fetchPackageMetadata.mockResolvedValue(makeRegistryMeta('@tapestry/core', '1.0.0'));
+    fetchTarball.mockResolvedValue(Buffer.from('tarball'));
+
+    await install(undefined, { cwd: tmpDir });
+
+    expect(fetchPackageMetadata).toHaveBeenCalledWith(
+      '@tapestry/core',
+      expect.any(String),
+      'user-token'
+    );
+  });
+
+  it('passes token to fetchTarball when logged in', async () => {
+    writeProjectManifest(tmpDir, { '@tapestry/core': '^1.0.0' });
+    loadToken.mockReturnValue('user-token');
+    fetchPackageMetadata.mockResolvedValue(makeRegistryMeta('@tapestry/core', '1.0.0'));
+    fetchTarball.mockResolvedValue(Buffer.from('tarball'));
+
+    await install(undefined, { cwd: tmpDir });
+
+    expect(fetchTarball).toHaveBeenCalledWith(
+      expect.any(String),
+      'user-token'
+    );
+  });
+
+  it('passes null token when not logged in', async () => {
+    writeProjectManifest(tmpDir, { '@tapestry/core': '^1.0.0' });
+    loadToken.mockReturnValue(null);
+    fetchPackageMetadata.mockResolvedValue(makeRegistryMeta('@tapestry/core', '1.0.0'));
+    fetchTarball.mockResolvedValue(Buffer.from('tarball'));
+
+    await install(undefined, { cwd: tmpDir });
+
+    expect(fetchTarball).toHaveBeenCalledWith(expect.any(String), null);
   });
 });

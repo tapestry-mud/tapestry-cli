@@ -9,6 +9,7 @@ const { readLock, writeLock } = require('../lib/lock-file');
 const { fetchTarball, DEFAULT_REGISTRY } = require('../lib/registry-client');
 const { verifyIntegrity, saveTarball, extractTarball } = require('../lib/tarball');
 const { addPackageToBoot } = require('../lib/boot');
+const { loadToken } = require('../lib/auth');
 
 function packInstallPath(cwd, packageName) {
   const parts = packageName.split('/');
@@ -28,7 +29,7 @@ function isLockCurrent(manifestDeps, lock) {
   return Object.keys(manifestDeps).every((name) => lockResolved[name]);
 }
 
-async function installResolved(cwd, resolved) {
+async function installResolved(cwd, resolved, token) {
   for (const [packageName, info] of Object.entries(resolved)) {
     const destDir = packInstallPath(cwd, packageName);
 
@@ -43,7 +44,7 @@ async function installResolved(cwd, resolved) {
     const tmpPath = path.join(os.tmpdir(), `tapestry-${safeId}-${info.version}.tgz`);
 
     try {
-      const buffer = await fetchTarball(info.tarball);
+      const buffer = await fetchTarball(info.tarball, token);
       verifyIntegrity(buffer, info.integrity);
       saveTarball(buffer, tmpPath);
       await extractTarball(tmpPath, destDir);
@@ -64,6 +65,7 @@ async function install(packageArg, { cwd = process.cwd(), registryUrl = DEFAULT_
     throw new Error('No tapestry.yaml found. Run `tapestry init` first.');
   }
 
+  const token = loadToken();
   const manifest = readYaml(manifestPath);
   let resolved;
 
@@ -74,7 +76,7 @@ async function install(packageArg, { cwd = process.cwd(), registryUrl = DEFAULT_
     manifest.dependencies[name] = tempRange;
 
     console.log('Resolving dependencies...');
-    resolved = await resolve(manifest.dependencies, registryUrl);
+    resolved = await resolve(manifest.dependencies, registryUrl, token);
 
     if (!rawRange) {
       manifest.dependencies[name] = `^${resolved[name].version}`;
@@ -88,11 +90,11 @@ async function install(packageArg, { cwd = process.cwd(), registryUrl = DEFAULT_
       resolved = lock.resolved;
     } else {
       console.log('Resolving dependencies...');
-      resolved = await resolve(manifest.dependencies || {}, registryUrl);
+      resolved = await resolve(manifest.dependencies || {}, registryUrl, token);
     }
   }
 
-  await installResolved(cwd, resolved);
+  await installResolved(cwd, resolved, token);
   writeLock(cwd, { lockfile_version: 1, resolved });
   console.log('Done.');
 }
