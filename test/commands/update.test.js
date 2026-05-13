@@ -104,7 +104,7 @@ describe('update', () => {
 
     const lock = readLock(tmpDir);
     expect(lock.resolved['@tapestry/weather'].version).toBe('0.8.5');
-    expect(fetchPackageMetadata).toHaveBeenCalledWith('@tapestry/weather', expect.any(String));
+    expect(fetchPackageMetadata).toHaveBeenCalledWith('@tapestry/weather', expect.any(String), null);
     expect(fetchPackageMetadata).toHaveBeenCalledTimes(1);
   });
 

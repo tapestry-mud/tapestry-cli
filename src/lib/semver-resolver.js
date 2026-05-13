@@ -3,7 +3,7 @@
 const semver = require('semver');
 const { fetchPackageMetadata } = require('./registry-client');
 
-async function resolve(dependencies, registryUrl) {
+async function resolve(dependencies, registryUrl, token = null) {
   if (!dependencies || Object.keys(dependencies).length === 0) {
     return {};
   }
@@ -34,13 +34,23 @@ async function resolve(dependencies, registryUrl) {
 
     resolvedBy[name] = { range, requiredBy };
 
-    const meta = await fetchPackageMetadata(name, baseUrl);
+    const meta = await fetchPackageMetadata(name, baseUrl, token);
+
+    let resolvedRange = range;
+    if (/^[a-z]+$/.test(range)) {
+      const distTags = meta.dist_tags || {};
+      if (!distTags[range]) {
+        throw new Error(`Tag '${range}' not found for ${name}. Available tags: ${Object.keys(distTags).join(', ') || 'none'}`);
+      }
+      resolvedRange = distTags[range];
+    }
+
     const versions = meta.versions.map((v) => v.version);
-    const best = semver.maxSatisfying(versions, range);
+    const best = semver.maxSatisfying(versions, resolvedRange);
 
     if (!best) {
       throw new Error(
-        `No version of ${name} satisfies ${range}. Available: ${versions.join(', ') || 'none'}`
+        `No version of ${name} satisfies ${resolvedRange}. Available: ${versions.join(', ') || 'none'}`
       );
     }
 

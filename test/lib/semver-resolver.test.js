@@ -127,4 +127,52 @@ describe('resolve', () => {
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('@tapestry/sustenance'));
     warnSpy.mockRestore();
   });
+
+  it('resolves named tag (e.g. "stable") via dist_tags in metadata', async () => {
+    fetchPackageMetadata.mockResolvedValue({
+      name: '@tapestry/core',
+      versions: [
+        { version: '1.0.0', integrity: 'sha256-x', manifest: { name: '@tapestry/core', version: '1.0.0', dependencies: {} } },
+        { version: '1.1.0', integrity: 'sha256-y', manifest: { name: '@tapestry/core', version: '1.1.0', dependencies: {} } },
+      ],
+      dist_tags: { stable: '1.0.0', latest: '1.1.0' },
+    });
+
+    const result = await resolve({ '@tapestry/core': 'stable' }, 'http://localhost:3002');
+    expect(result['@tapestry/core'].version).toBe('1.0.0');
+  });
+
+  it('resolves "latest" tag via dist_tags', async () => {
+    fetchPackageMetadata.mockResolvedValue({
+      name: '@tapestry/core',
+      versions: [
+        { version: '1.0.0', integrity: 'sha256-x', manifest: { name: '@tapestry/core', version: '1.0.0', dependencies: {} } },
+        { version: '1.1.0', integrity: 'sha256-y', manifest: { name: '@tapestry/core', version: '1.1.0', dependencies: {} } },
+      ],
+      dist_tags: { latest: '1.1.0' },
+    });
+
+    const result = await resolve({ '@tapestry/core': 'latest' }, 'http://localhost:3002');
+    expect(result['@tapestry/core'].version).toBe('1.1.0');
+  });
+
+  it('throws when named tag does not exist in dist_tags', async () => {
+    fetchPackageMetadata.mockResolvedValue({
+      name: '@tapestry/core',
+      versions: [{ version: '1.0.0', integrity: 'sha256-x', manifest: { name: '@tapestry/core', version: '1.0.0', dependencies: {} } }],
+      dist_tags: {},
+    });
+
+    await expect(resolve({ '@tapestry/core': 'stable' }, 'http://localhost:3002'))
+      .rejects.toThrow("Tag 'stable' not found for @tapestry/core");
+  });
+
+  it('does not treat semver range as a tag name', async () => {
+    fetchPackageMetadata.mockResolvedValue(
+      makePackageMeta('@tapestry/core', [{ version: '1.0.0' }, { version: '1.1.0' }])
+    );
+
+    const result = await resolve({ '@tapestry/core': '^1.0.0' }, 'http://localhost:3002');
+    expect(result['@tapestry/core'].version).toBe('1.1.0');
+  });
 });
