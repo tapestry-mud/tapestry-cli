@@ -22,6 +22,20 @@ tapestry start
 
 Connect with `telnet localhost 4000`.
 
+**Requirements:** [Docker](https://www.docker.com/) must be installed and running. The default engine mode pulls a Docker image. Binary and source modes are also available (.NET runtime required for source mode -- coming soon).
+
+## Admin Account
+
+`tapestry init` generates a `server.yaml` with a seed admin block:
+
+```yaml
+admin:
+  handle: TODO    # your admin character name
+  password: changeme
+```
+
+Set your handle before starting the server. On first boot, the engine creates the admin account with the `admin` role. Log in and change your password immediately.
+
 ## Project Structure
 
 After `tapestry init`, your project looks like this:
@@ -29,7 +43,7 @@ After `tapestry init`, your project looks like this:
 ```
 my-game/
   tapestry.yaml     # project manifest (dependencies, engine config)
-  server.yaml       # engine config (port, settings)
+  server.yaml       # engine config (port, admin seed, settings)
   packs/            # installed packs (managed by tapestry install)
   data/             # game data -- players, saves (persists across restarts)
   .tapestry-engine/ # engine artifacts (docker images, binaries, source)
@@ -139,7 +153,7 @@ The CI token is a JWT issued by the registry bootstrap script. Store it as a sec
 
 ## Registry
 
-Packs are published to [registry.tapestryengine.com](https://registry.tapestryengine.com).
+Browse published packs at [tapestryengine.com/packages.html](https://tapestryengine.com/packages.html).
 
 ## Development
 
