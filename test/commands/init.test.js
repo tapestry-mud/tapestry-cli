@@ -64,6 +64,18 @@ test('creates server.yaml', async () => {
   }
 });
 
+test('server.yaml includes admin block with TODO handle and changeme password', async () => {
+  {
+    const projectDir = path.join(tmpDir, 'my-game');
+    fs.mkdirSync(projectDir);
+    await init(projectDir);
+    const serverConfig = readYaml(path.join(projectDir, 'server.yaml'));
+    expect(serverConfig.admin).toBeDefined();
+    expect(serverConfig.admin.handle).toBe('TODO');
+    expect(serverConfig.admin.password).toBe('changeme');
+  }
+});
+
 test('creates packs/ directory', async () => {
   {
     const projectDir = path.join(tmpDir, 'my-game');
