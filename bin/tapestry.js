@@ -35,6 +35,71 @@ program
   .description('Tapestry Package Manager')
   .version(version);
 
+program.configureHelp({
+  formatHelp(cmd, helper) {
+    const groups = [
+      {
+        title: 'Pack Management',
+        commands: ['uninstall', 'update', 'list', 'enable', 'disable', 'outdated'],
+      },
+      {
+        title: 'Engine',
+        commands: ['engine'],
+      },
+      {
+        title: 'Registry',
+        commands: ['search', 'info'],
+      },
+      {
+        title: 'Account',
+        commands: ['register', 'login', 'change-password'],
+      },
+      {
+        title: 'Pack Authoring',
+        commands: ['create', 'validate', 'pack', 'publish', 'unpublish'],
+      },
+      {
+        title: 'Admin',
+        commands: ['dist-tag', 'preset'],
+      },
+    ];
+
+    const cmdMap = new Map();
+    for (const sub of cmd.commands) {
+      cmdMap.set(sub.name(), sub);
+    }
+
+    const pad = 28;
+    let out = `Usage: ${helper.commandUsage(cmd)}\n\n`;
+    out += 'Tapestry Package Manager\n\n';
+    out += 'Quick start:\n';
+    out += `  ${'init'.padEnd(pad)}Scaffold a new game project\n`;
+    out += `  ${'install'.padEnd(pad)}Install packs from the registry\n`;
+    out += `  ${'start'.padEnd(pad)}Launch the engine (auto-pulls if needed)\n`;
+    out += `  ${'stop'.padEnd(pad)}Stop the running engine\n`;
+    out += '  telnet localhost 4000\n\n';
+
+    for (const group of groups) {
+      out += `${group.title}:\n`;
+      for (const name of group.commands) {
+        const sub = cmdMap.get(name);
+        if (sub) {
+          const usage = sub.options.length ? `${name} [options]` : name;
+          out += `  ${usage.padEnd(pad)}${sub.description()}\n`;
+        }
+      }
+      out += '\n';
+    }
+
+    out += 'Options:\n';
+    for (const opt of helper.visibleOptions(cmd)) {
+      out += `  ${helper.optionTerm(opt).padEnd(pad)}${helper.optionDescription(opt)}\n`;
+    }
+
+    return out;
+  },
+});
+
 program
   .command('init')
   .description('Initialize a new Tapestry game project in the current directory')
@@ -47,7 +112,7 @@ program
     }
   });
 
-const createCmd = program.command('create');
+const createCmd = program.command('create').description('Scaffold new content');
 
 createCmd
   .command('pack <name>')
