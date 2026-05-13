@@ -51,7 +51,7 @@ async function init(cwd, { registryUrl = DEFAULT_REGISTRY } = {}) {
   fs.mkdirSync(path.join(cwd, 'packs'), { recursive: true });
   fs.writeFileSync(
     path.join(cwd, '.gitignore'),
-    '# Installed packages (managed by tapestry install)\npacks/\n\n# Engine artifacts (managed by tapestry engine install)\n.tapestry-engine/\n'
+    '# Installed packages (managed by tapestry install)\npacks/\n\n# Engine artifacts (managed by tapestry engine install)\n.tapestry-engine/\n\n# Game data (players, saves)\ndata/\n'
   );
 
   console.log(`Initialized: ${name}`);

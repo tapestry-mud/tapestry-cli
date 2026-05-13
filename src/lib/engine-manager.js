@@ -58,8 +58,17 @@ function dockerPull(image, version) {
   console.log(`Engine image ready: ${image}:${version}`);
 }
 
-function dockerStart(projectName, image, version, packsDir, serverYamlPath) {
+function dockerEnsureImage(image, version) {
+  const check = spawnSync('docker', ['image', 'inspect', `${image}:${version}`], { stdio: 'ignore' });
+  if (check.status !== 0) {
+    dockerPull(image, version);
+  }
+}
+
+function dockerStart(projectName, image, version, packsDir, serverYamlPath, dataDir) {
   const containerName = `tapestry-${projectName}`;
+  dockerEnsureImage(image, version);
+  spawnSync('docker', ['rm', '-f', containerName], { stdio: 'ignore' });
   const result = spawnSync('docker', [
     'run', '--detach',
     '--name', containerName,
@@ -67,6 +76,7 @@ function dockerStart(projectName, image, version, packsDir, serverYamlPath) {
     '-p', '4001:4001',
     '-v', `${packsDir}:/app/packs`,
     '-v', `${serverYamlPath}:/app/server.yaml`,
+    '-v', `${dataDir}:/app/data`,
     `${image}:${version}`,
   ], { stdio: 'inherit' });
   if (result.status !== 0) {
@@ -296,6 +306,7 @@ function getEngineInfo(cwd) {
 async function startEngine(cwd) {
   const config = readEngineConfig(cwd);
   const packsDir = path.resolve(cwd, 'packs');
+  const dataDir = path.resolve(cwd, 'data');
   const serverYamlPath = path.resolve(cwd, 'server.yaml');
   if (!fs.existsSync(packsDir)) {
     throw new Error('packs/ directory not found. Run tapestry install first.');
@@ -303,9 +314,10 @@ async function startEngine(cwd) {
   if (!fs.existsSync(serverYamlPath)) {
     throw new Error('server.yaml not found in the current directory.');
   }
+  fs.mkdirSync(dataDir, { recursive: true });
   if (config.mode === 'docker') {
     const tag = await resolveDockerTag(config);
-    dockerStart(config.projectName, config.image, tag, packsDir, serverYamlPath);
+    dockerStart(config.projectName, config.image, tag, packsDir, serverYamlPath, dataDir);
   } else if (config.mode === 'binary') {
     binaryStart(config.version, config.installDir, packsDir, serverYamlPath, cwd);
   } else {
