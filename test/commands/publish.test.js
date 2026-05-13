@@ -51,7 +51,7 @@ function writeManifest(cwd) {
     author: { name: 'Tester', handle: 'mallek' },
     license: 'MIT',
     engine: '>=3.0.0',
-    tag_validation: 'strict',
+    validation: 'strict',
   });
 }
 

@@ -16,7 +16,7 @@ function buildManifest(name, deps) {
     depLines,
     `  # Add more packs here. Run: tapestry install @scope/pack-name`,
     `packs: []`,
-    `tag_validation: strict`,
+    `validation: strict`,
     ``,
     `# Server port, admin seed account, and engine settings are in server.yaml`,
   ].join('\n');

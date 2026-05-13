@@ -14,7 +14,7 @@ const validPackage = {
   author: { name: 'Test Author', handle: 'author' },
   license: 'MIT',
   engine: '>=3.0.0',
-  tag_validation: 'strict',
+  validation: 'strict',
 };
 
 test('accepts a valid package manifest', () => {
@@ -38,8 +38,8 @@ test('rejects an invalid type', () => {
   expect(result.success).toBe(false);
 });
 
-test('rejects an invalid tag_validation value', () => {
-  const result = validatePackageManifest({ ...validPackage, tag_validation: 'off' });
+test('rejects an invalid validation value', () => {
+  const result = validatePackageManifest({ ...validPackage, validation: 'off' });
   expect(result.success).toBe(false);
 });
 

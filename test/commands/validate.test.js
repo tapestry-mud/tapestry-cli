@@ -29,7 +29,7 @@ const VALID_MANIFEST = {
   author: { name: 'Tester', handle: 'mallek' },
   license: 'MIT',
   engine: '>=3.0.0',
-  tag_validation: 'strict',
+  validation: 'strict',
 };
 
 it('succeeds on a valid manifest', () => {
@@ -57,7 +57,7 @@ it('throws when type is invalid', () => {
   expect(() => validate({ cwd: tmpDir })).toThrow(/validation error/);
 });
 
-it('throws when tag_validation is invalid', () => {
-  writeManifest(tmpDir, { ...VALID_MANIFEST, tag_validation: 'none' });
+it('throws when validation is invalid', () => {
+  writeManifest(tmpDir, { ...VALID_MANIFEST, validation: 'none' });
   expect(() => validate({ cwd: tmpDir })).toThrow(/validation error/);
 });

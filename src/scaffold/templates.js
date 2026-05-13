@@ -30,9 +30,9 @@ engine: ">=3.0.0"
 provides:
   - example
 
-# strict: undeclared tags on entities cause load failure
-# lenient: undeclared tags log warnings, pack still loads
-tag_validation: strict
+# strict: undeclared tags and unregistered properties cause load failure
+# lenient: logs warnings, pack still loads
+validation: strict
 
 # Path to tag declarations file
 tags: "tags.yml"
@@ -56,7 +56,7 @@ meta:
 function tagsTemplate() {
   return `# Tag declarations for this pack.
 # Tags listed here can be used on entities (items, npcs, rooms, areas).
-# Undeclared tags cause load failure when tag_validation: strict.
+# Undeclared tags cause load failure when validation is strict.
 #
 # Convention: always snake_case (e.g., safe_recall, not safe-recall)
 # applies_to: which entity types accept this tag

@@ -19,7 +19,7 @@ const PackageManifestSchema = z.object({
   ]),
   license: z.string().min(1),
   engine: z.string().min(1),
-  tag_validation: z.enum(['strict', 'lenient']),
+  validation: z.enum(['strict', 'lenient']),
   dependencies: z.record(z.string()).optional(),
   peerDependencies: z.record(z.string()).optional(),
   provides: z.array(z.string()).optional(),
@@ -56,7 +56,7 @@ const ProjectManifestSchema = z.object({
   ]),
   dependencies: z.record(z.string()).optional(),
   packs: z.array(z.string()).optional(),
-  tag_validation: z.enum(['strict', 'lenient']).optional(),
+  validation: z.enum(['strict', 'lenient']).optional(),
 });
 
 function validatePackageManifest(data) {
