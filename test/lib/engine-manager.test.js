@@ -252,16 +252,26 @@ describe('docker mode', () => {
 
     it('mounts packs/ as a volume at /app/packs', async () => {
       await startEngine(tmpDir);
-      const args = spawnSync.mock.calls[0][1];
+      const runCall = spawnSync.mock.calls.find(c => c[1] && c[1].includes('run'));
+      const args = runCall[1];
       const volArgs = args.filter((_, i) => args[i - 1] === '-v');
       expect(volArgs.some(v => v.endsWith(':/app/packs'))).toBe(true);
     });
 
     it('mounts server.yaml as a volume at /app/server.yaml', async () => {
       await startEngine(tmpDir);
-      const args = spawnSync.mock.calls[0][1];
+      const runCall = spawnSync.mock.calls.find(c => c[1] && c[1].includes('run'));
+      const args = runCall[1];
       const volArgs = args.filter((_, i) => args[i - 1] === '-v');
       expect(volArgs.some(v => v.endsWith(':/app/server.yaml'))).toBe(true);
+    });
+
+    it('mounts data/ as a volume at /app/data', async () => {
+      await startEngine(tmpDir);
+      const runCall = spawnSync.mock.calls.find(c => c[1] && c[1].includes('run'));
+      const args = runCall[1];
+      const volArgs = args.filter((_, i) => args[i - 1] === '-v');
+      expect(volArgs.some(v => v.endsWith(':/app/data'))).toBe(true);
     });
 
     it('throws when packs/ directory does not exist', async () => {
@@ -275,7 +285,10 @@ describe('docker mode', () => {
     });
 
     it('throws when docker run fails', async () => {
-      spawnSync.mockReturnValueOnce({ status: 1 });
+      spawnSync
+        .mockReturnValueOnce({ status: 0 })  // docker image inspect
+        .mockReturnValueOnce({ status: 0 })  // docker rm -f
+        .mockReturnValueOnce({ status: 1 }); // docker run
       await expect(startEngine(tmpDir)).rejects.toThrow('docker run failed');
     });
   });
