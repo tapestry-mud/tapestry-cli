@@ -18,6 +18,7 @@ function buildManifest(name, deps) {
     `packs: []`,
     `tag_validation: strict`,
     ``,
+    `# Server port, admin seed account, and engine settings are in server.yaml`,
   ].join('\n');
 }
 
@@ -47,7 +48,7 @@ async function init(cwd, { registryUrl = DEFAULT_REGISTRY } = {}) {
 
   const name = path.basename(cwd);
   fs.writeFileSync(manifestPath, buildManifest(name, deps));
-  fs.writeFileSync(path.join(cwd, 'server.yaml'), '# Tapestry server configuration\n# See https://tapestryengine.com/docs/config for full options\nport: 4000\n');
+  fs.writeFileSync(path.join(cwd, 'server.yaml'), '# Tapestry server configuration\n# See https://tapestryengine.com/docs/config for full options\nport: 4000\n\n# Admin account created on first boot (change password after login)\nadmin:\n  handle: TODO    # your admin character name\n  password: changeme\n');
   fs.mkdirSync(path.join(cwd, 'packs'), { recursive: true });
   fs.writeFileSync(
     path.join(cwd, '.gitignore'),
