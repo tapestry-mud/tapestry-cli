@@ -41,6 +41,7 @@ const PackageManifestSchema = z.object({
     properties: z.number().optional(),
     keywords: z.array(z.string()).optional(),
   }).optional(),
+  private: z.boolean().optional(),
 });
 
 const ProjectManifestSchema = z.object({

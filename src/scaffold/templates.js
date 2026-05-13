@@ -12,6 +12,9 @@ author:
   handle: "TODO: your-registry-handle"
 license: "MIT"
 
+# Packs default to public. Add \`private: true\` to restrict access to your
+# account and registry admins only.
+
 # Semver range: >=3.0.0 means any engine version at or above this.
 engine: ">=3.0.0"
 

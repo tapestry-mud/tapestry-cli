@@ -25,6 +25,8 @@ const { startCmd } = require('../src/commands/start');
 const { stopCmd } = require('../src/commands/stop');
 const { changePassword } = require('../src/commands/change-password');
 const { unpublish } = require('../src/commands/unpublish');
+const { distTagSet, distTagList } = require('../src/commands/dist-tag');
+const { presetSet } = require('../src/commands/preset');
 
 const program = new Command();
 
@@ -36,9 +38,9 @@ program
 program
   .command('init')
   .description('Initialize a new Tapestry game project in the current directory')
-  .action(() => {
+  .action(async () => {
     try {
-      init();
+      await init();
     } catch (e) {
       console.error(`error: ${e.message}`);
       process.exit(1);
@@ -53,6 +55,47 @@ createCmd
   .action((name) => {
     try {
       createPack(name);
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+const distTagCmd = program.command('dist-tag').description('Manage dist-tags for a registry package');
+
+distTagCmd
+  .command('set <pack> <tag> <version>')
+  .description('Set a dist-tag on a pack version (owner or admin only)')
+  .action(async (pack, tag, version) => {
+    try {
+      await distTagSet(pack, tag, version);
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+distTagCmd
+  .command('list <pack>')
+  .description('List all dist-tags for a pack')
+  .action(async (pack) => {
+    try {
+      await distTagList(pack);
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+const presetCmd = program.command('preset').description('Manage registry presets (admin only)');
+
+presetCmd
+  .command('set <name> <version> <engine-channel> <packs>')
+  .description('Update a preset with pinned pack versions (packs: JSON string)')
+  .action(async (name, version, engineChannel, packsJson) => {
+    try {
+      const packs = JSON.parse(packsJson);
+      await presetSet(name, version, engineChannel, packs);
     } catch (e) {
       console.error(`error: ${e.message}`);
       process.exit(1);
@@ -122,9 +165,10 @@ program
 program
   .command('login')
   .description('Authenticate with the registry and store token in ~/.tapestryrc')
-  .action(async () => {
+  .option('--token <token>', 'Save a raw token directly (for CI use, skips interactive login)')
+  .action(async (options) => {
     try {
-      await login();
+      await login({}, { token: options.token });
     } catch (e) {
       console.error(`error: ${e.message}`);
       process.exit(1);

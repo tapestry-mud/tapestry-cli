@@ -16,7 +16,12 @@ async function promptCredentials() {
   }
 }
 
-async function login({ email, password } = {}, { registryUrl = DEFAULT_REGISTRY } = {}) {
+async function login({ email, password } = {}, { registryUrl = DEFAULT_REGISTRY, token = null } = {}) {
+  if (token) {
+    saveToken(token);
+    console.log('Token saved.');
+    return;
+  }
   if (!email || !password) {
     ({ email, password } = await promptCredentials());
   }
@@ -29,8 +34,8 @@ async function login({ email, password } = {}, { registryUrl = DEFAULT_REGISTRY 
 
   await throwIfError(res, 'Login failed');
 
-  const { token } = await res.json();
-  saveToken(token);
+  const { token: authToken } = await res.json();
+  saveToken(authToken);
   console.log('Logged in.');
 }
 
