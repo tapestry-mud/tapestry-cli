@@ -2,27 +2,109 @@
 
 const fs = require('fs');
 const path = require('path');
-const { fetchPreset, DEFAULT_REGISTRY } = require('../lib/registry-client');
+const { fetchPreset, fetchPresetList, DEFAULT_REGISTRY } = require('../lib/registry-client');
 
-function buildManifest(name, deps) {
-  const depLines = Object.entries(deps).map(([pkg, range]) => `  '${pkg}': '${range}'`).join('\n');
+function buildManifest(name, deps, engineVersion, engineChannel) {
+  const depLines = Object.entries(deps)
+    .map(([pkg, range]) => `  '${pkg}': '${range}'`)
+    .join('\n');
   return [
     `name: ${name}`,
     `engine:`,
-    `  version: '0.0.1'`,
+    `  version: '${engineVersion}'`,
+    `  channel: ${engineChannel}`,
     `  mode: docker`,
     `  image: ghcr.io/tapestry-mud/tapestry`,
     `dependencies:`,
     depLines,
     `  # Add more packs here. Run: tapestry install @scope/pack-name`,
-    `packs: []`,
     `validation: strict`,
     ``,
     `# Server port, admin seed account, and engine settings are in server.yaml`,
   ].join('\n');
 }
 
-async function init(cwd, { registryUrl = DEFAULT_REGISTRY } = {}) {
+function buildServerYaml({ serverName, adminHandle, adminPassword, telemetry }) {
+  const telemetryBlock = telemetry
+    ? [
+        `telemetry:`,
+        `  enabled: true`,
+        `  endpoint: "http://localhost:4317"`,
+        `  protocol: grpc`,
+        `  service_name: tapestry`,
+      ].join('\n')
+    : [
+        `# telemetry:`,
+        `#   enabled: true`,
+        `#   endpoint: "http://localhost:4317"`,
+        `#   protocol: grpc`,
+        `#   service_name: tapestry`,
+      ].join('\n');
+
+  return [
+    `# Tapestry server configuration`,
+    `# Uncomment and modify sections as needed.`,
+    `# Docs: https://tapestryengine.com/docs/config`,
+    ``,
+    `server:`,
+    `  name: "${serverName}"`,
+    `  telnet_port: 4000`,
+    `  websocket_port: 4001`,
+    `  max_connections: 200`,
+    `  tick_rate_ms: 100`,
+    ``,
+    `admin:`,
+    `  handle: ${adminHandle}`,
+    `  password: ${adminPassword}`,
+    ``,
+    `# --- Telemetry (OpenTelemetry) ---`,
+    `# Requires the observability stack. In 0.4.0: tapestry telemetry start`,
+    telemetryBlock,
+    ``,
+    `# --- Logging ---`,
+    `# logging:`,
+    `#   level: Information`,
+    ``,
+    `# --- Persistence ---`,
+    `# persistence:`,
+    `#   save_path: "./data/saves"`,
+    `#   connections_path: "./data/connections"`,
+    `#   autosave_interval: 3000`,
+    `#   password_min_length: 6`,
+    `#   max_login_attempts: 5`,
+    ``,
+    `# --- Idle Timeouts ---`,
+    `# idle:`,
+    `#   pre_login_timeout_seconds: 120`,
+    `#   phase_timeouts:`,
+    `#     name: 60`,
+    `#     password: 30`,
+    `#     session_takeover: 15`,
+    `#     creating: 300`,
+    ``,
+    `# --- MSSP (MUD Server Status Protocol) ---`,
+    `# mssp:`,
+    `#   name: "${serverName}"`,
+    `#   codebase: "Tapestry"`,
+    `#   hostname: ""`,
+    `#   port: 4000`,
+    ``,
+    `# --- LLM ---`,
+    `# llm:`,
+    `#   provider: none`,
+    ``,
+    `# --- Networking ---`,
+    `# networking:`,
+    `#   negotiation_timeout_ms: 500`,
+    ``,
+    `# --- Pre-Auth (web client token auth) ---`,
+    `# pre_auth:`,
+    `#   enabled: false`,
+    `#   token_expiry_seconds: 60`,
+  ].join('\n');
+}
+
+async function init(cwd, { registryUrl = DEFAULT_REGISTRY, yes = false, prompter = null } = {}) {
   if (cwd === undefined) {
     cwd = process.cwd();
   }
@@ -34,38 +116,135 @@ async function init(cwd, { registryUrl = DEFAULT_REGISTRY } = {}) {
 
   let preset;
   try {
-    preset = await fetchPreset('starter', registryUrl);
+    const presets = await fetchPresetList(registryUrl);
+    if (presets === null) {
+      preset = await fetchPreset('starter', registryUrl);
+      console.log(`Using preset: starter (engine v${preset.version}, ${preset.engine_channel} channel)`);
+    } else if (presets.length === 1) {
+      console.log(`Using preset: ${presets[0].name} (engine v${presets[0].version}, ${presets[0].engine_channel} channel)`);
+      preset = await fetchPreset(presets[0].name, registryUrl);
+    } else {
+      const doPrompt = prompter || require('inquirer').prompt;
+      const { selectedPreset } = await doPrompt([{
+        type: 'list',
+        name: 'selectedPreset',
+        message: 'Select a preset:',
+        choices: presets.map(p => ({
+          name: `${p.name} (engine v${p.version}, ${p.engine_channel} channel)`,
+          value: p.name,
+        })),
+      }]);
+      preset = await fetchPreset(selectedPreset, registryUrl);
+      console.log(`Using preset: ${selectedPreset} (engine v${preset.version}, ${preset.engine_channel} channel)`);
+    }
   } catch (e) {
-    throw new Error(`Failed to fetch starter preset from registry: ${e.message}. Check your connection and try again.`);
+    throw new Error(`Failed to fetch presets from registry: ${e.message}. Check your connection and try again.`);
   }
-
-  console.log(`Initializing Tapestry Starter v${preset.version}`);
 
   const deps = {};
   for (const [pkg, ver] of Object.entries(preset.packs)) {
     deps[pkg] = `^${ver}`;
   }
 
-  const name = path.basename(cwd);
-  fs.writeFileSync(manifestPath, buildManifest(name, deps));
-  fs.writeFileSync(path.join(cwd, 'server.yaml'), '# Tapestry server configuration\n# See https://tapestryengine.com/docs/config for full options\nport: 4000\n\n# Admin account created on first boot (change password after login)\nadmin:\n  handle: TODO    # your admin character name\n  password: changeme\n');
+  const dirName = path.basename(cwd);
+  let answers;
+
+  if (yes) {
+    answers = {
+      gameName: dirName,
+      adminHandle: 'admin',
+      adminPassword: 'changeme',
+      serverName: dirName,
+      telemetry: false,
+    };
+    console.warn('Default admin credentials -- change in server.yaml before production use.');
+  } else {
+    const doPrompt = prompter || require('inquirer').prompt;
+    answers = await doPrompt([
+      {
+        type: 'input',
+        name: 'gameName',
+        message: 'Game name:',
+        default: dirName,
+        validate: (v) => (v.trim().length > 0 && /^[a-zA-Z0-9_.-]+$/.test(v.trim())) || 'Must be non-empty and filesystem-safe',
+      },
+      {
+        type: 'input',
+        name: 'adminHandle',
+        message: 'Admin handle:',
+        validate: (v) => (v.trim().length > 0 && !/\s/.test(v)) || 'Required, no spaces',
+      },
+      {
+        type: 'password',
+        name: 'adminPassword',
+        message: 'Admin password:',
+        mask: '*',
+        validate: (v) => v.length >= 6 || 'Minimum 6 characters',
+      },
+      {
+        type: 'password',
+        name: 'adminPasswordConfirm',
+        message: 'Confirm admin password:',
+        mask: '*',
+        validate: (v, a) => v === a.adminPassword || 'Passwords do not match',
+      },
+      {
+        type: 'input',
+        name: 'serverName',
+        message: 'Server name:',
+        default: (a) => a.gameName,
+        validate: (v) => v.trim().length > 0 || 'Required',
+      },
+      {
+        type: 'confirm',
+        name: 'telemetry',
+        message: 'Enable telemetry?',
+        default: false,
+      },
+    ]);
+  }
+
+  const name = answers.gameName;
+
+  fs.writeFileSync(manifestPath, buildManifest(name, deps, preset.version, preset.engine_channel));
+  fs.writeFileSync(
+    path.join(cwd, 'server.yaml'),
+    buildServerYaml({
+      serverName: answers.serverName,
+      adminHandle: answers.adminHandle,
+      adminPassword: answers.adminPassword,
+      telemetry: answers.telemetry,
+    })
+  );
   fs.mkdirSync(path.join(cwd, 'packs'), { recursive: true });
   fs.writeFileSync(
     path.join(cwd, '.gitignore'),
     '# Installed packages (managed by tapestry install)\npacks/\n\n# Engine artifacts (managed by tapestry engine install)\n.tapestry-engine/\n\n# Game data (players, saves)\ndata/\n'
   );
 
+  console.log('');
   console.log(`Initialized: ${name}`);
-  console.log('  tapestry.yaml  project manifest');
-  console.log('  server.yaml    engine config');
-  console.log('  packs/         installed packages');
-  console.log('  .gitignore     excludes packs/ and .tapestry-engine/ from git');
+  console.log(`  tapestry.yaml  project manifest (engine v${preset.version})`);
+  console.log(`  server.yaml    engine config`);
+  console.log(`  packs/         installed packages`);
+  console.log(`  .gitignore     excludes packs/ and .tapestry-engine/ from git`);
+  console.log('');
+  console.log('Next steps:');
+  console.log('  tapestry install          install packs');
+  console.log('  tapestry engine install   pull the engine image');
+  console.log('  tapestry start            boot the server');
 
-  if (!fs.existsSync(path.join(cwd, '.git'))) {
-    console.log('\nHint: no git repo detected. Run: git init');
+  if (answers.telemetry) {
+    console.log('');
+    console.log('  Telemetry is enabled in server.yaml.');
+    console.log('  The observability stack (Grafana, Prometheus, Loki, Jaeger) must be');
+    console.log('  running for telemetry data to be collected. See docs for setup.');
   }
 
-  console.log('\nNext: run tapestry install, then tapestry engine install, then tapestry start');
+  if (!fs.existsSync(path.join(cwd, '.git'))) {
+    console.log('');
+    console.log('Hint: no git repo detected. Run: git init');
+  }
 }
 
-module.exports = { init };
+module.exports = { init, buildManifest, buildServerYaml };
