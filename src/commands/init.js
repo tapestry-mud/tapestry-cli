@@ -158,7 +158,6 @@ async function init(cwd, { registryUrl = DEFAULT_REGISTRY, yes = false, prompter
       gameName: dirName,
       adminHandle: 'admin',
       adminPassword: 'changeme',
-      serverName: dirName,
       telemetry: false,
     };
     console.warn('Default admin credentials -- change in server.yaml before production use.');
@@ -193,13 +192,6 @@ async function init(cwd, { registryUrl = DEFAULT_REGISTRY, yes = false, prompter
         validate: (v, a) => v === a.adminPassword || 'Passwords do not match',
       },
       {
-        type: 'input',
-        name: 'serverName',
-        message: 'Server name:',
-        default: (a) => a.gameName,
-        validate: (v) => v.trim().length > 0 || 'Required',
-      },
-      {
         type: 'confirm',
         name: 'telemetry',
         message: 'Enable telemetry?',
@@ -214,7 +206,7 @@ async function init(cwd, { registryUrl = DEFAULT_REGISTRY, yes = false, prompter
   fs.writeFileSync(
     path.join(cwd, 'server.yaml'),
     buildServerYaml({
-      serverName: answers.serverName,
+      serverName: answers.gameName,
       adminHandle: answers.adminHandle,
       adminPassword: answers.adminPassword,
       telemetry: answers.telemetry,

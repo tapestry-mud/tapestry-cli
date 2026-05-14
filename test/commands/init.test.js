@@ -209,7 +209,6 @@ test('uses injected prompter to pick from multiple presets', async () => {
       adminHandle: 'admin',
       adminPassword: 'secret123',
       adminPasswordConfirm: 'secret123',
-      serverName: 'My Game',
       telemetry: false,
     });
   await init(projectDir, { prompter: mockPrompt });
@@ -228,7 +227,7 @@ test('throws when fetchPresetList fails with non-404 error', async () => {
 // Interactive wizard
 // -------------------------
 
-test('wizard mode uses prompter answers for gameName, adminHandle, serverName', async () => {
+test('wizard mode uses prompter answers for gameName and adminHandle', async () => {
   const projectDir = path.join(tmpDir, 'any-dir');
   fs.mkdirSync(projectDir);
   const mockPrompt = jest.fn().mockResolvedValue({
@@ -236,7 +235,6 @@ test('wizard mode uses prompter answers for gameName, adminHandle, serverName', 
     adminHandle: 'sysop',
     adminPassword: 'hunter22',
     adminPasswordConfirm: 'hunter22',
-    serverName: 'My Cool Mud',
     telemetry: false,
   });
   await init(projectDir, { prompter: mockPrompt });
@@ -255,7 +253,6 @@ test('wizard mode: telemetry=true writes active telemetry block in server.yaml',
     adminHandle: 'sysop',
     adminPassword: 'hunter22',
     adminPasswordConfirm: 'hunter22',
-    serverName: 'My MUD',
     telemetry: true,
   });
   await init(projectDir, { prompter: mockPrompt });
@@ -269,7 +266,7 @@ test('wizard mode: telemetry=true writes active telemetry block in server.yaml',
 // --yes mode
 // -------------------------
 
-test('yes mode uses dirName as gameName and serverName', async () => {
+test('yes mode uses dirName as gameName and server name', async () => {
   const projectDir = path.join(tmpDir, 'epic-mud');
   fs.mkdirSync(projectDir);
   await init(projectDir, { yes: true });
