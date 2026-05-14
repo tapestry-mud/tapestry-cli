@@ -69,6 +69,16 @@ async function fetchPreset(name, registryUrl = DEFAULT_REGISTRY) {
   return res.json();
 }
 
+async function fetchPresetList(registryUrl = DEFAULT_REGISTRY) {
+  const url = `${registryUrl.replace(/\/$/, '')}/v1/presets`;
+  const res = await fetch(url);
+  if (res.status === 404) {
+    return null;
+  }
+  await throwIfError(res, 'Failed to fetch preset list');
+  return res.json();
+}
+
 async function patchDistTag(packName, tag, version, token, registryUrl = DEFAULT_REGISTRY) {
   validatePackageName(packName);
   const url = `${registryUrl.replace(/\/$/, '')}/v1/packages/${packName}/dist-tags/${tag}`;
@@ -108,5 +118,5 @@ async function patchPreset(name, payload, token, registryUrl = DEFAULT_REGISTRY)
 
 module.exports = {
   fetchPackageMetadata, fetchTarball, throwIfError, DEFAULT_REGISTRY,
-  fetchPreset, patchDistTag, listDistTags, patchPreset,
+  fetchPreset, fetchPresetList, patchDistTag, listDistTags, patchPreset,
 };

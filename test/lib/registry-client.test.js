@@ -1,6 +1,6 @@
 'use strict';
 
-const { fetchPackageMetadata, fetchTarball, DEFAULT_REGISTRY } = require('../../src/lib/registry-client');
+const { fetchPackageMetadata, fetchTarball, fetchPresetList, DEFAULT_REGISTRY } = require('../../src/lib/registry-client');
 
 jest.mock('node-fetch');
 const fetch = require('node-fetch');
@@ -202,5 +202,42 @@ describe('patchPreset', () => {
         headers: expect.objectContaining({ Authorization: 'Bearer admin-token' }),
       })
     );
+  });
+});
+
+describe('fetchPresetList', () => {
+  beforeEach(() => {
+    fetch.mockReset();
+  });
+
+  it('fetches from /v1/presets and returns array', async () => {
+    const presets = [
+      { name: 'starter', version: '0.0.3', engine_channel: 'stable', updated_at: '2026-05-14T00:00:00Z' },
+    ];
+    fetch.mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve(presets) });
+
+    const result = await fetchPresetList('http://localhost:3002');
+
+    expect(fetch).toHaveBeenCalledWith('http://localhost:3002/v1/presets');
+    expect(result).toEqual(presets);
+  });
+
+  it('returns null on 404 (old registry without list endpoint)', async () => {
+    fetch.mockResolvedValue({ ok: false, status: 404, json: () => Promise.resolve({ error: 'not found' }) });
+
+    const result = await fetchPresetList('http://localhost:3002');
+
+    expect(result).toBeNull();
+  });
+
+  it('throws on non-404 errors', async () => {
+    fetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      headers: { get: () => null },
+      json: () => Promise.resolve({ error: 'internal error' }),
+    });
+
+    await expect(fetchPresetList('http://localhost:3002')).rejects.toThrow('internal error');
   });
 });
