@@ -4,6 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const { fetchPreset, fetchPresetList, DEFAULT_REGISTRY } = require('../lib/registry-client');
 
+function slugify(str) {
+  return str.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_.-]/g, '');
+}
+
 function buildManifest(name, deps, engineVersion, engineChannel) {
   const depLines = Object.entries(deps)
     .map(([pkg, range]) => `  '${pkg}': '${range}'`)
@@ -166,7 +170,7 @@ async function init(cwd, { registryUrl = DEFAULT_REGISTRY, yes = false, prompter
         name: 'gameName',
         message: 'Game name:',
         default: dirName,
-        validate: (v) => (v.trim().length > 0 && /^[a-zA-Z0-9_.-]+$/.test(v.trim())) || 'Must be non-empty and filesystem-safe',
+        validate: (v) => v.trim().length > 0 || 'Required',
       },
       {
         type: 'input',
@@ -204,7 +208,7 @@ async function init(cwd, { registryUrl = DEFAULT_REGISTRY, yes = false, prompter
     ]);
   }
 
-  const name = answers.gameName;
+  const name = slugify(answers.gameName);
 
   fs.writeFileSync(manifestPath, buildManifest(name, deps, preset.version, preset.engine_channel));
   fs.writeFileSync(
@@ -247,4 +251,4 @@ async function init(cwd, { registryUrl = DEFAULT_REGISTRY, yes = false, prompter
   }
 }
 
-module.exports = { init, buildManifest, buildServerYaml };
+module.exports = { init, buildManifest, buildServerYaml, slugify };

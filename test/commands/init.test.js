@@ -3,7 +3,7 @@
 jest.mock('../../src/lib/registry-client');
 const { fetchPreset, fetchPresetList } = require('../../src/lib/registry-client');
 
-const { init } = require('../../src/commands/init');
+const { init, slugify } = require('../../src/commands/init');
 const { readYaml } = require('../../src/util/yaml');
 const fs = require('fs');
 const path = require('path');
@@ -232,19 +232,19 @@ test('wizard mode uses prompter answers for gameName, adminHandle, serverName', 
   const projectDir = path.join(tmpDir, 'any-dir');
   fs.mkdirSync(projectDir);
   const mockPrompt = jest.fn().mockResolvedValue({
-    gameName: 'my-mud',
+    gameName: 'My Cool Mud',
     adminHandle: 'sysop',
     adminPassword: 'hunter22',
     adminPasswordConfirm: 'hunter22',
-    serverName: 'The MUD Server',
+    serverName: 'My Cool Mud',
     telemetry: false,
   });
   await init(projectDir, { prompter: mockPrompt });
   const manifest = readYaml(path.join(projectDir, 'tapestry.yaml'));
-  expect(manifest.name).toBe('my-mud');
+  expect(manifest.name).toBe('my-cool-mud');
   const serverConfig = readYaml(path.join(projectDir, 'server.yaml'));
   expect(serverConfig.admin.handle).toBe('sysop');
-  expect(serverConfig.server.name).toBe('The MUD Server');
+  expect(serverConfig.server.name).toBe('My Cool Mud');
 });
 
 test('wizard mode: telemetry=true writes active telemetry block in server.yaml', async () => {
@@ -361,4 +361,20 @@ test('does not log git hint when .git directory exists', async () => {
   const output = log.mock.calls.flat().join('\n');
   expect(output).not.toContain('git init');
   log.mockRestore();
+});
+
+// -------------------------
+// slugify
+// -------------------------
+
+test('slugify lowercases and replaces spaces with hyphens', () => {
+  expect(slugify('My Cool Mud')).toBe('my-cool-mud');
+});
+
+test('slugify strips non-slug characters', () => {
+  expect(slugify('My Game! @2026')).toBe('my-game-2026');
+});
+
+test('slugify passes through already-safe names', () => {
+  expect(slugify('my-mud')).toBe('my-mud');
 });
