@@ -103,9 +103,10 @@ program.configureHelp({
 program
   .command('init')
   .description('Initialize a new Tapestry game project in the current directory')
-  .action(async () => {
+  .option('-y, --yes', 'Skip prompts and use defaults (for CI and scripting)')
+  .action(async (options) => {
     try {
-      await init();
+      await init(undefined, { yes: !!options.yes });
     } catch (e) {
       console.error(`error: ${e.message}`);
       process.exit(1);
