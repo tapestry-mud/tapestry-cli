@@ -105,6 +105,11 @@ function buildServerYaml({ serverName, adminHandle, adminPassword, telemetry }) 
     `# pre_auth:`,
     `#   enabled: false`,
     `#   token_expiry_seconds: 60`,
+    ``,
+    `# --- Link-Dead (player disconnect grace period) ---`,
+    `# link_dead:`,
+    `#   enabled: true`,
+    `#   timeout_seconds: 120`,
   ].join('\n');
 }
 

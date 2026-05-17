@@ -375,3 +375,13 @@ test('slugify strips non-slug characters', () => {
 test('slugify passes through already-safe names', () => {
   expect(slugify('my-mud')).toBe('my-mud');
 });
+
+test('server.yaml includes commented link_dead section', async () => {
+  const projectDir = path.join(tmpDir, 'my-game');
+  fs.mkdirSync(projectDir);
+  await init(projectDir, { yes: true });
+  const serverYaml = fs.readFileSync(path.join(projectDir, 'server.yaml'), 'utf8');
+  expect(serverYaml).toContain('link_dead:');
+  expect(serverYaml).toContain('enabled:');
+  expect(serverYaml).toContain('timeout_seconds:');
+});
