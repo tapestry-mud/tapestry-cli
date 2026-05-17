@@ -1,6 +1,6 @@
 {
   "name": "@tapestry-mud/cli",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "description": "CLI for the Tapestry MUD engine",
   "bin": {
     "tapestry": "./bin/tapestry.js"
