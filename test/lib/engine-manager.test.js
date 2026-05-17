@@ -291,6 +291,25 @@ describe('docker mode', () => {
         .mockReturnValueOnce({ status: 1 }); // docker run
       await expect(startEngine(tmpDir)).rejects.toThrow('docker run failed');
     });
+
+    it('passes --network flag when engine.network is set', async () => {
+      writeYaml(path.join(tmpDir, 'tapestry.yaml'), {
+        name: 'my-game',
+        engine: { version: '3.1.0', mode: 'docker', network: 'my_network' },
+      });
+      await startEngine(tmpDir);
+      const runCall = spawnSync.mock.calls.find(c => c[1] && c[1].includes('run'));
+      const args = runCall[1];
+      const networkIdx = args.indexOf('--network');
+      expect(networkIdx).toBeGreaterThan(-1);
+      expect(args[networkIdx + 1]).toBe('my_network');
+    });
+
+    it('omits --network flag when engine.network is not set', async () => {
+      await startEngine(tmpDir);
+      const runCall = spawnSync.mock.calls.find(c => c[1] && c[1].includes('run'));
+      expect(runCall[1]).not.toContain('--network');
+    });
   });
 
   describe('stopEngine', () => {

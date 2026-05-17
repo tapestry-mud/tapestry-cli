@@ -65,11 +65,11 @@ function dockerEnsureImage(image, version) {
   }
 }
 
-function dockerStart(projectName, image, version, packsDir, serverYamlPath, dataDir) {
+function dockerStart(projectName, image, version, packsDir, serverYamlPath, dataDir, network) {
   const containerName = `tapestry-${projectName}`;
   dockerEnsureImage(image, version);
   spawnSync('docker', ['rm', '-f', containerName], { stdio: 'ignore' });
-  const result = spawnSync('docker', [
+  const args = [
     'run', '--detach',
     '--name', containerName,
     '-p', '4000:4000',
@@ -77,8 +77,12 @@ function dockerStart(projectName, image, version, packsDir, serverYamlPath, data
     '-v', `${packsDir}:/app/packs`,
     '-v', `${serverYamlPath}:/app/server.yaml`,
     '-v', `${dataDir}:/app/data`,
-    `${image}:${version}`,
-  ], { stdio: 'inherit' });
+  ];
+  if (network) {
+    args.push('--network', network);
+  }
+  args.push(`${image}:${version}`);
+  const result = spawnSync('docker', args, { stdio: 'inherit' });
   if (result.status !== 0) {
     throw new Error(
       `docker run failed. Ensure the image exists and no container named '${containerName}' is already running.`
@@ -261,6 +265,7 @@ function readEngineConfig(cwd) {
     version: engine.version,
     mode: engine.mode,
     image: engine.image || DEFAULT_IMAGE,
+    network: engine.network || null,
     installDir: path.join(cwd, '.tapestry-engine'),
     projectName: (manifest.name || 'tapestry').toLowerCase().replace(/[^a-z0-9-]+/g, '-'),
   };
@@ -317,7 +322,7 @@ async function startEngine(cwd) {
   fs.mkdirSync(dataDir, { recursive: true });
   if (config.mode === 'docker') {
     const tag = await resolveDockerTag(config);
-    dockerStart(config.projectName, config.image, tag, packsDir, serverYamlPath, dataDir);
+    dockerStart(config.projectName, config.image, tag, packsDir, serverYamlPath, dataDir, config.network);
   } else if (config.mode === 'binary') {
     binaryStart(config.version, config.installDir, packsDir, serverYamlPath, cwd);
   } else {
