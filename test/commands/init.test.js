@@ -132,6 +132,7 @@ test('server.yaml admin block uses yes-mode defaults', async () => {
   const serverConfig = readYaml(path.join(projectDir, 'server.yaml'));
   expect(serverConfig.admin).toBeDefined();
   expect(serverConfig.admin.handle).toBe('admin');
+  expect(serverConfig.admin.email).toBe('admin@localhost');
   expect(serverConfig.admin.password).toBe('changeme');
 });
 
@@ -207,6 +208,7 @@ test('uses injected prompter to pick from multiple presets', async () => {
     .mockResolvedValueOnce({
       gameName: 'my-game',
       adminHandle: 'admin',
+      adminEmail: 'admin@test.com',
       adminPassword: 'secret123',
       adminPasswordConfirm: 'secret123',
       telemetry: false,
@@ -233,6 +235,7 @@ test('wizard mode uses prompter answers for gameName and adminHandle', async () 
   const mockPrompt = jest.fn().mockResolvedValue({
     gameName: 'My Cool Mud',
     adminHandle: 'sysop',
+    adminEmail: 'sysop@test.com',
     adminPassword: 'hunter22',
     adminPasswordConfirm: 'hunter22',
     telemetry: false,
@@ -251,6 +254,7 @@ test('wizard mode: telemetry=true writes active telemetry block in server.yaml',
   const mockPrompt = jest.fn().mockResolvedValue({
     gameName: 'my-mud',
     adminHandle: 'sysop',
+    adminEmail: 'sysop@test.com',
     adminPassword: 'hunter22',
     adminPasswordConfirm: 'hunter22',
     telemetry: true,
@@ -326,6 +330,7 @@ test('output includes telemetry note when telemetry=true', async () => {
   const mockPrompt = jest.fn().mockResolvedValue({
     gameName: 'my-game',
     adminHandle: 'admin',
+    adminEmail: 'admin@test.com',
     adminPassword: 'secret1',
     adminPasswordConfirm: 'secret1',
     serverName: 'My Game',
@@ -374,6 +379,15 @@ test('slugify strips non-slug characters', () => {
 
 test('slugify passes through already-safe names', () => {
   expect(slugify('my-mud')).toBe('my-mud');
+});
+
+test('server.yaml includes commented accounts section', async () => {
+  const projectDir = path.join(tmpDir, 'my-game');
+  fs.mkdirSync(projectDir);
+  await init(projectDir, { yes: true });
+  const raw = fs.readFileSync(path.join(projectDir, 'server.yaml'), 'utf8');
+  expect(raw).toContain('# accounts:');
+  expect(raw).toContain('#   max_concurrent_characters:');
 });
 
 test('server.yaml includes commented link_dead section', async () => {

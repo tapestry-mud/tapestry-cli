@@ -28,7 +28,7 @@ function buildManifest(name, deps, engineVersion, engineChannel) {
   ].join('\n');
 }
 
-function buildServerYaml({ serverName, adminHandle, adminPassword, telemetry }) {
+function buildServerYaml({ serverName, adminHandle, adminEmail, adminPassword, telemetry }) {
   const telemetryBlock = telemetry
     ? [
         `telemetry:`,
@@ -59,6 +59,7 @@ function buildServerYaml({ serverName, adminHandle, adminPassword, telemetry }) 
     ``,
     `admin:`,
     `  handle: ${adminHandle}`,
+    `  email: ${adminEmail}`,
     `  password: ${adminPassword}`,
     ``,
     `# --- Telemetry (OpenTelemetry) ---`,
@@ -105,6 +106,10 @@ function buildServerYaml({ serverName, adminHandle, adminPassword, telemetry }) 
     `# pre_auth:`,
     `#   enabled: false`,
     `#   token_expiry_seconds: 60`,
+    ``,
+    `# --- Accounts ---`,
+    `# accounts:`,
+    `#   max_concurrent_characters: 1`,
     ``,
     `# --- Link-Dead (player disconnect grace period) ---`,
     `# link_dead:`,
@@ -162,6 +167,7 @@ async function init(cwd, { registryUrl = DEFAULT_REGISTRY, yes = false, prompter
     answers = {
       gameName: dirName,
       adminHandle: 'admin',
+      adminEmail: 'admin@localhost',
       adminPassword: 'changeme',
       telemetry: false,
     };
@@ -181,6 +187,17 @@ async function init(cwd, { registryUrl = DEFAULT_REGISTRY, yes = false, prompter
         name: 'adminHandle',
         message: 'Admin handle:',
         validate: (v) => (v.trim().length > 0 && !/\s/.test(v)) || 'Required, no spaces',
+      },
+      {
+        type: 'input',
+        name: 'adminEmail',
+        message: 'Admin email:',
+        validate: (v) => {
+          v = v.trim();
+          if (!v) { return 'Required'; }
+          if (!v.includes('@') || !v.includes('.')) { return 'Must be a valid email'; }
+          return true;
+        },
       },
       {
         type: 'password',
@@ -213,6 +230,7 @@ async function init(cwd, { registryUrl = DEFAULT_REGISTRY, yes = false, prompter
     buildServerYaml({
       serverName: answers.gameName,
       adminHandle: answers.adminHandle,
+      adminEmail: answers.adminEmail,
       adminPassword: answers.adminPassword,
       telemetry: answers.telemetry,
     })
