@@ -255,7 +255,7 @@ program
 
 program
   .command('validate')
-  .description('Validate tapestry.yaml in the current directory')
+  .description('Validate pack.yaml in the current directory')
   .action(() => {
     try {
       validate();
