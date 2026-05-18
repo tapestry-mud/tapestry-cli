@@ -42,7 +42,7 @@ afterEach(() => {
 });
 
 function writeManifest(cwd) {
-  writeYaml(path.join(cwd, 'tapestry.yaml'), {
+  writeYaml(path.join(cwd, 'pack.yaml'), {
     name: '@mallek/test-pack',
     version: '1.0.0',
     type: 'module',

@@ -26,7 +26,7 @@ afterEach(() => {
 });
 
 it('runs validate before building', async () => {
-  writeYaml(path.join(tmpDir, 'tapestry.yaml'), {
+  writeYaml(path.join(tmpDir, 'pack.yaml'), {
     name: '@mallek/test-pack',
     version: '0.2.0',
   });
@@ -38,7 +38,7 @@ it('runs validate before building', async () => {
 });
 
 it('names the output tarball <short-name>-<version>.tgz', async () => {
-  writeYaml(path.join(tmpDir, 'tapestry.yaml'), {
+  writeYaml(path.join(tmpDir, 'pack.yaml'), {
     name: '@mallek/combat-utils',
     version: '1.2.3',
   });
@@ -50,7 +50,7 @@ it('names the output tarball <short-name>-<version>.tgz', async () => {
 });
 
 it('writes the tarball into the pack directory', async () => {
-  writeYaml(path.join(tmpDir, 'tapestry.yaml'), {
+  writeYaml(path.join(tmpDir, 'pack.yaml'), {
     name: '@mallek/test-pack',
     version: '0.1.0',
   });

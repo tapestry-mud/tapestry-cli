@@ -10,11 +10,12 @@ const { validate } = require('./validate');
 const { buildTarball, computeIntegrity } = require('../lib/tarball-builder');
 const { requireToken } = require('../lib/auth');
 const { DEFAULT_REGISTRY, throwIfError } = require('../lib/registry-client');
+const { PACK_MANIFEST } = require('../lib/manifest');
 
 async function publish({ cwd = process.cwd(), registryUrl = DEFAULT_REGISTRY } = {}) {
   validate({ cwd });
 
-  const manifest = readYaml(path.join(cwd, 'tapestry.yaml'));
+  const manifest = readYaml(path.join(cwd, PACK_MANIFEST));
   const token = requireToken();
 
   const shortName = manifest.name.split('/')[1];
