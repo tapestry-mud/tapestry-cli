@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 function makePack(dir) {
-  fs.writeFileSync(path.join(dir, 'tapestry.yaml'), 'name: "@mallek/test"\nversion: "1.0.0"\n');
+  fs.writeFileSync(path.join(dir, 'pack.yaml'), 'name: "@mallek/test"\nversion: "1.0.0"\n');
   fs.writeFileSync(path.join(dir, 'readme.md'), 'hello');
   const subDir = path.join(dir, 'scripts');
   fs.mkdirSync(subDir);
@@ -50,7 +50,7 @@ it('tarball entries are prefixed with package/', async () => {
   });
 
   expect(entries.some((e) => e.startsWith('package/'))).toBe(true);
-  expect(entries.some((e) => e.includes('tapestry.yaml'))).toBe(true);
+  expect(entries.some((e) => e.includes('pack.yaml'))).toBe(true);
 });
 
 it('excludes .git and node_modules directories', async () => {

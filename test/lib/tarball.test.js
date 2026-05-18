@@ -49,7 +49,7 @@ describe('extractTarball', () => {
     const srcDir = path.join(tmpDir, 'src');
     const pkgDir = path.join(srcDir, 'package');
     fs.mkdirSync(pkgDir, { recursive: true });
-    fs.writeFileSync(path.join(pkgDir, 'tapestry.yaml'), 'name: "@test/pkg"\nversion: "1.0.0"\n');
+    fs.writeFileSync(path.join(pkgDir, 'pack.yaml'), 'name: "@test/pkg"\nversion: "1.0.0"\n');
 
     const tgzPath = path.join(tmpDir, 'pkg.tgz');
     await tar.create({ gzip: true, file: tgzPath, cwd: srcDir }, ['package']);
@@ -57,6 +57,6 @@ describe('extractTarball', () => {
     const destDir = path.join(tmpDir, 'dest');
     await extractTarball(tgzPath, destDir);
 
-    expect(fs.existsSync(path.join(destDir, 'tapestry.yaml'))).toBe(true);
+    expect(fs.existsSync(path.join(destDir, 'pack.yaml'))).toBe(true);
   });
 });

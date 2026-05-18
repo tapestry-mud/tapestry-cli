@@ -19,7 +19,7 @@ function setupProject(cwd, deps = {}, installedPackages = []) {
     const parts = pkg.split('/');
     const pkgDir = path.join(cwd, 'packs', ...parts);
     fs.mkdirSync(pkgDir, { recursive: true });
-    writeYaml(path.join(pkgDir, 'tapestry.yaml'), { name: pkg, version: '1.0.0' });
+    writeYaml(path.join(pkgDir, 'pack.yaml'), { name: pkg, version: '1.0.0' });
     resolved[pkg] = { version: '1.0.0', integrity: 'sha256-x', tarball: 'http://example.com/a.tgz' };
   }
   writeLock(cwd, { lockfile_version: 1, resolved });
