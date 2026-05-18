@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 function writeManifest(cwd, data) {
-  writeYaml(path.join(cwd, 'tapestry.yaml'), data);
+  writeYaml(path.join(cwd, 'pack.yaml'), data);
 }
 
 const VALID_MANIFEST = {
@@ -37,8 +37,8 @@ it('succeeds on a valid manifest', () => {
   expect(() => validate({ cwd: tmpDir })).not.toThrow();
 });
 
-it('throws when tapestry.yaml is missing', () => {
-  expect(() => validate({ cwd: tmpDir })).toThrow('No tapestry.yaml found');
+it('throws when pack.yaml is missing', () => {
+  expect(() => validate({ cwd: tmpDir })).toThrow('No pack.yaml found');
 });
 
 it('throws when name is not scoped', () => {
@@ -60,4 +60,26 @@ it('throws when type is invalid', () => {
 it('throws when validation is invalid', () => {
   writeManifest(tmpDir, { ...VALID_MANIFEST, validation: 'none' });
   expect(() => validate({ cwd: tmpDir })).toThrow(/validation error/);
+});
+
+it('reports helpful error when engine is an object in pack manifest', () => {
+  writeManifest(tmpDir, { ...VALID_MANIFEST, engine: { version: 'stable', mode: 'docker' } });
+  const log = jest.spyOn(console, 'log').mockImplementation();
+  try {
+    expect(() => validate({ cwd: tmpDir })).toThrow(/validation error/);
+    const output = log.mock.calls.flat().join('\n');
+    expect(output).toContain('version constraint string');
+    expect(output).toContain('tapestry.yaml');
+  } finally {
+    log.mockRestore();
+  }
+});
+
+it('gives helpful error when only tapestry.yaml (server manifest) exists', () => {
+  writeYaml(path.join(tmpDir, 'tapestry.yaml'), {
+    name: 'my-game',
+    engine: { version: '3.1.0', mode: 'docker' },
+  });
+  expect(() => validate({ cwd: tmpDir })).toThrow('No pack.yaml found');
+  expect(() => validate({ cwd: tmpDir })).toThrow('server manifest');
 });
