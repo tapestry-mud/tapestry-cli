@@ -32,7 +32,7 @@ function writePackManifest(cwd, packageName, data) {
   const parts = packageName.split('/');
   const packDir = path.join(cwd, 'packs', ...parts);
   fs.mkdirSync(packDir, { recursive: true });
-  writeYaml(path.join(packDir, 'tapestry.yaml'), data);
+  writeYaml(path.join(packDir, 'pack.yaml'), data);
 }
 
 it('prints "No packages installed." when no lock file', async () => {

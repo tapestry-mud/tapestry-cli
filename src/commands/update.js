@@ -9,6 +9,7 @@ const { readLock, writeLock } = require('../lib/lock-file');
 const { fetchTarball, DEFAULT_REGISTRY } = require('../lib/registry-client');
 const { verifyIntegrity, saveTarball, extractTarball } = require('../lib/tarball');
 const { addPackageToBoot } = require('../lib/boot');
+const { PACK_MANIFEST } = require('../lib/manifest');
 
 function packInstallPath(cwd, packageName) {
   const parts = packageName.split('/');
@@ -69,7 +70,7 @@ async function update(packageArg, { cwd = process.cwd(), registryUrl = DEFAULT_R
       }
     }
 
-    const packManifest = readYaml(path.join(destDir, 'tapestry.yaml'));
+    const packManifest = readYaml(path.join(destDir, PACK_MANIFEST));
     addPackageToBoot(cwd, packageName, packManifest);
   }
 

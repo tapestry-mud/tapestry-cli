@@ -51,7 +51,7 @@ beforeEach(() => {
   // Default: write a minimal pack manifest so installResolved can read it after extraction.
   extractTarball.mockImplementation(async (_tarPath, destDir) => {
     fs.mkdirSync(destDir, { recursive: true });
-    writeYaml(path.join(destDir, 'tapestry.yaml'), { name: 'mock-pkg', version: '1.0.0' });
+    writeYaml(path.join(destDir, 'pack.yaml'), { name: 'mock-pkg', version: '1.0.0' });
   });
 });
 
@@ -139,7 +139,7 @@ describe('install (no args)', () => {
     });
     fs.mkdirSync(path.join(tmpDir, 'packs', '@tapestry', 'core'), { recursive: true });
     fs.writeFileSync(
-      path.join(tmpDir, 'packs', '@tapestry', 'core', 'tapestry.yaml'),
+      path.join(tmpDir, 'packs', '@tapestry', 'core', 'pack.yaml'),
       'name: "@tapestry/core"\nversion: "1.0.0"\n'
     );
 
@@ -164,7 +164,7 @@ describe('install (no args)', () => {
     });
     fs.mkdirSync(path.join(tmpDir, 'packs', '@tapestry', 'core'), { recursive: true });
     fs.writeFileSync(
-      path.join(tmpDir, 'packs', '@tapestry', 'core', 'tapestry.yaml'),
+      path.join(tmpDir, 'packs', '@tapestry', 'core', 'pack.yaml'),
       'name: "@tapestry/core"\nversion: "1.0.0"\n'
     );
     fetchTarball.mockResolvedValue(Buffer.from('fake'));

@@ -5,6 +5,7 @@ const path = require('path');
 const { readLock } = require('../lib/lock-file');
 const { readBoot } = require('../lib/boot');
 const { readYaml } = require('../util/yaml');
+const { PACK_MANIFEST } = require('../lib/manifest');
 
 function packInstallPath(cwd, packageName) {
   const parts = packageName.split('/');
@@ -32,7 +33,7 @@ async function list({ cwd = process.cwd() } = {}) {
     const enabled = boot.packs[pkgName]?.enabled !== false ? 'enabled' : 'disabled';
 
     let type = '';
-    const packManifestPath = path.join(packInstallPath(cwd, pkgName), 'tapestry.yaml');
+    const packManifestPath = path.join(packInstallPath(cwd, pkgName), PACK_MANIFEST);
     if (fs.existsSync(packManifestPath)) {
       try {
         type = readYaml(packManifestPath).type || '';

@@ -37,7 +37,7 @@ function setupProject(cwd, deps, lockedVersions) {
       const parts = name.split('/');
       const pkgDir = path.join(cwd, 'packs', ...parts);
       fs.mkdirSync(pkgDir, { recursive: true });
-      writeYaml(path.join(pkgDir, 'tapestry.yaml'), { name, version });
+      writeYaml(path.join(pkgDir, 'pack.yaml'), { name, version });
     }
     writeLock(cwd, { lockfile_version: 1, resolved });
   }
@@ -68,7 +68,7 @@ describe('update', () => {
     fetchTarball.mockResolvedValue(Buffer.from('new'));
     extractTarball.mockImplementation(async (_tarPath, destDir) => {
       fs.mkdirSync(destDir, { recursive: true });
-      writeYaml(path.join(destDir, 'tapestry.yaml'), { name: '@tapestry/core', version: '1.1.0' });
+      writeYaml(path.join(destDir, 'pack.yaml'), { name: '@tapestry/core', version: '1.1.0' });
     });
 
     await update(undefined, { cwd: tmpDir });
@@ -97,7 +97,7 @@ describe('update', () => {
     fetchTarball.mockResolvedValue(Buffer.from('new'));
     extractTarball.mockImplementation(async (_tarPath, destDir) => {
       fs.mkdirSync(destDir, { recursive: true });
-      writeYaml(path.join(destDir, 'tapestry.yaml'), { name: '@tapestry/weather', version: '0.8.5' });
+      writeYaml(path.join(destDir, 'pack.yaml'), { name: '@tapestry/weather', version: '0.8.5' });
     });
 
     await update('@tapestry/weather', { cwd: tmpDir });

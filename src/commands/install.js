@@ -10,6 +10,7 @@ const { fetchTarball, DEFAULT_REGISTRY } = require('../lib/registry-client');
 const { verifyIntegrity, saveTarball, extractTarball } = require('../lib/tarball');
 const { addPackageToBoot } = require('../lib/boot');
 const { loadToken } = require('../lib/auth');
+const { PACK_MANIFEST } = require('../lib/manifest');
 
 function packInstallPath(cwd, packageName) {
   const parts = packageName.split('/');
@@ -37,7 +38,7 @@ async function installResolved(cwd, resolved, token) {
     const destDir = packInstallPath(cwd, packageName);
 
     if (fs.existsSync(destDir)) {
-      const installedManifestPath = path.join(destDir, 'tapestry.yaml');
+      const installedManifestPath = path.join(destDir, PACK_MANIFEST);
       if (fs.existsSync(installedManifestPath)) {
         const installed = readYaml(installedManifestPath);
         if (installed.version === info.version) {
@@ -67,7 +68,7 @@ async function installResolved(cwd, resolved, token) {
       }
     }
 
-    const packManifest = readYaml(path.join(destDir, 'tapestry.yaml'));
+    const packManifest = readYaml(path.join(destDir, PACK_MANIFEST));
     addPackageToBoot(cwd, packageName, packManifest);
   }
 }
