@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { generatePackFiles } = require('../scaffold/templates');
+const { PACK_MANIFEST } = require('../lib/manifest');
 
 function parseName(name) {
   const scopedMatch = name.match(/^@([a-z0-9-]+)\/([a-z0-9-]+)$/);
@@ -59,7 +60,7 @@ function createPack(name, cwd) {
         console.log(`  ${file.path}`);
       }
     }
-    console.log('\nEdit tapestry.yaml, then run: tapestry validate');
+    console.log(`\nEdit ${PACK_MANIFEST}, then run: tapestry validate`);
   }
 }
 

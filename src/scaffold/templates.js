@@ -404,7 +404,7 @@ see_also: [help, commands]
 
 function generatePackFiles({ scopedName, shortName }) {
   return [
-    { path: 'tapestry.yaml', content: manifestTemplate(scopedName) },
+    { path: 'pack.yaml', content: manifestTemplate(scopedName) },
     { path: 'tags.yml', content: tagsTemplate() },
     { path: 'areas/example-area/area.yaml', content: areaTemplate() },
     { path: 'areas/example-area/rooms/town-square.yaml', content: roomTemplate(shortName) },

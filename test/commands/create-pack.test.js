@@ -47,15 +47,16 @@ describe('createPack', () => {
     expect(fs.existsSync(path.join(tmpDir, 'my-pack'))).toBe(true);
   });
 
-  test('tapestry.yaml contains the scoped name', () => {
+  test('pack.yaml contains the scoped name', () => {
     createPack('@author/my-pack', tmpDir);
-    const content = fs.readFileSync(path.join(tmpDir, 'my-pack', 'tapestry.yaml'), 'utf8');
+    const content = fs.readFileSync(path.join(tmpDir, 'my-pack', 'pack.yaml'), 'utf8');
     expect(content).toContain('@author/my-pack');
   });
 
   test('creates all 8 scaffold files', () => {
     createPack('@author/my-pack', tmpDir);
     const packDir = path.join(tmpDir, 'my-pack');
+    expect(fs.existsSync(path.join(packDir, 'pack.yaml'))).toBe(true);
     expect(fs.existsSync(path.join(packDir, 'tags.yml'))).toBe(true);
     expect(fs.existsSync(path.join(packDir, 'areas', 'example-area', 'area.yaml'))).toBe(true);
     expect(fs.existsSync(path.join(packDir, 'areas', 'example-area', 'rooms', 'town-square.yaml'))).toBe(true);
