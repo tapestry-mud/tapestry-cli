@@ -5,7 +5,7 @@ const os = require('os');
 const path = require('path');
 const { readYaml, writeYaml } = require('../util/yaml');
 const { resolve } = require('../lib/semver-resolver');
-const { readLock, writeLock } = require('../lib/lock-file');
+const { readLock, writeLock, hashDeps } = require('../lib/lock-file');
 const { fetchTarball, DEFAULT_REGISTRY } = require('../lib/registry-client');
 const { verifyIntegrity, saveTarball, extractTarball } = require('../lib/tarball');
 const { addPackageToBoot } = require('../lib/boot');
@@ -25,6 +25,9 @@ function parsePackageArg(arg) {
 }
 
 function isLockCurrent(manifestDeps, lock) {
+  if (!lock.deps_hash || lock.deps_hash !== hashDeps(manifestDeps)) {
+    return false;
+  }
   const lockResolved = lock.resolved || {};
   return Object.keys(manifestDeps).every((name) => lockResolved[name]);
 }
@@ -34,8 +37,18 @@ async function installResolved(cwd, resolved, token) {
     const destDir = packInstallPath(cwd, packageName);
 
     if (fs.existsSync(destDir)) {
-      console.log(`  already installed ${packageName}@${info.version}`);
-      continue;
+      const installedManifestPath = path.join(destDir, 'tapestry.yaml');
+      if (fs.existsSync(installedManifestPath)) {
+        const installed = readYaml(installedManifestPath);
+        if (installed.version === info.version) {
+          console.log(`  already installed ${packageName}@${info.version}`);
+          continue;
+        }
+        console.log(`  upgrading ${packageName} ${installed.version} -> ${info.version}`);
+      } else {
+        console.log(`  reinstalling ${packageName}@${info.version} (missing manifest)`);
+      }
+      fs.rmSync(destDir, { recursive: true });
     }
 
     console.log(`  installing ${packageName}@${info.version}`);
@@ -95,7 +108,8 @@ async function install(packageArg, { cwd = process.cwd(), registryUrl = DEFAULT_
   }
 
   await installResolved(cwd, resolved, token);
-  writeLock(cwd, { lockfile_version: 1, resolved });
+  const deps = manifest.dependencies || {};
+  writeLock(cwd, { lockfile_version: 1, deps_hash: hashDeps(deps), resolved });
   console.log('Done.');
 }
 

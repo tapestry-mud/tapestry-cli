@@ -3,7 +3,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { readLock, writeLock } = require('../../src/lib/lock-file');
+const { readLock, writeLock, hashDeps } = require('../../src/lib/lock-file');
 
 let tmpDir;
 
@@ -56,5 +56,30 @@ describe('writeLock', () => {
 
     expect(result.resolved['@tapestry/weather'].version).toBe('0.8.1');
     expect(result.resolved['@tapestry/weather'].integrity).toBe('sha256-def');
+  });
+});
+
+describe('hashDeps', () => {
+  it('produces a stable hash for the same deps', () => {
+    const deps = { '@tapestry/core': '^1.0.0', '@tapestry/weather': '^0.8.0' };
+    expect(hashDeps(deps)).toBe(hashDeps(deps));
+  });
+
+  it('produces the same hash regardless of key order', () => {
+    const a = { '@tapestry/weather': '^0.8.0', '@tapestry/core': '^1.0.0' };
+    const b = { '@tapestry/core': '^1.0.0', '@tapestry/weather': '^0.8.0' };
+    expect(hashDeps(a)).toBe(hashDeps(b));
+  });
+
+  it('produces a different hash when a version range changes', () => {
+    const a = { '@tapestry/core': '^1.0.0' };
+    const b = { '@tapestry/core': '^2.0.0' };
+    expect(hashDeps(a)).not.toBe(hashDeps(b));
+  });
+
+  it('produces a different hash when a dep is added', () => {
+    const a = { '@tapestry/core': '^1.0.0' };
+    const b = { '@tapestry/core': '^1.0.0', '@tapestry/weather': '^0.8.0' };
+    expect(hashDeps(a)).not.toBe(hashDeps(b));
   });
 });

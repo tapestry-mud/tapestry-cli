@@ -15,7 +15,7 @@ const { verifyIntegrity, saveTarball, extractTarball } = require('../../src/lib/
 
 const { install } = require('../../src/commands/install');
 const { readYaml, writeYaml } = require('../../src/util/yaml');
-const { readLock, writeLock } = require('../../src/lib/lock-file');
+const { readLock, writeLock, hashDeps } = require('../../src/lib/lock-file');
 const { readBoot } = require('../../src/lib/boot');
 
 let tmpDir;
@@ -77,9 +77,11 @@ describe('install (no args)', () => {
   });
 
   it('uses lock file for fast install when lock matches manifest deps', async () => {
-    writeProjectManifest(tmpDir, { '@tapestry/core': '^1.0.0' });
+    const deps = { '@tapestry/core': '^1.0.0' };
+    writeProjectManifest(tmpDir, deps);
     writeLock(tmpDir, {
       lockfile_version: 1,
+      deps_hash: hashDeps(deps),
       resolved: {
         '@tapestry/core': {
           version: '1.0.0',
@@ -121,10 +123,12 @@ describe('install (no args)', () => {
     expect(lock.resolved['@tapestry/weather']).toBeDefined();
   });
 
-  it('skips already-installed packages', async () => {
-    writeProjectManifest(tmpDir, { '@tapestry/core': '^1.0.0' });
+  it('skips already-installed packages when version matches', async () => {
+    const deps = { '@tapestry/core': '^1.0.0' };
+    writeProjectManifest(tmpDir, deps);
     writeLock(tmpDir, {
       lockfile_version: 1,
+      deps_hash: hashDeps(deps),
       resolved: {
         '@tapestry/core': {
           version: '1.0.0',
@@ -133,7 +137,6 @@ describe('install (no args)', () => {
         },
       },
     });
-    // Pre-create the install dir to simulate already installed
     fs.mkdirSync(path.join(tmpDir, 'packs', '@tapestry', 'core'), { recursive: true });
     fs.writeFileSync(
       path.join(tmpDir, 'packs', '@tapestry', 'core', 'tapestry.yaml'),
@@ -143,6 +146,55 @@ describe('install (no args)', () => {
     await install(undefined, { cwd: tmpDir });
 
     expect(extractTarball).not.toHaveBeenCalled();
+  });
+
+  it('re-extracts when on-disk version differs from resolved version', async () => {
+    const deps = { '@tapestry/core': '^1.0.0' };
+    writeProjectManifest(tmpDir, deps);
+    writeLock(tmpDir, {
+      lockfile_version: 1,
+      deps_hash: hashDeps(deps),
+      resolved: {
+        '@tapestry/core': {
+          version: '1.2.0',
+          integrity: 'sha256-new',
+          tarball: 'http://localhost:3002/v1/packages/@tapestry/core/1.2.0.tgz',
+        },
+      },
+    });
+    fs.mkdirSync(path.join(tmpDir, 'packs', '@tapestry', 'core'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, 'packs', '@tapestry', 'core', 'tapestry.yaml'),
+      'name: "@tapestry/core"\nversion: "1.0.0"\n'
+    );
+    fetchTarball.mockResolvedValue(Buffer.from('fake'));
+
+    await install(undefined, { cwd: tmpDir });
+
+    expect(extractTarball).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-resolves when deps hash in lock does not match manifest', async () => {
+    writeProjectManifest(tmpDir, { '@tapestry/core': '^2.0.0' });
+    writeLock(tmpDir, {
+      lockfile_version: 1,
+      deps_hash: hashDeps({ '@tapestry/core': '^1.0.0' }),
+      resolved: {
+        '@tapestry/core': {
+          version: '1.0.0',
+          integrity: 'sha256-abc',
+          tarball: 'http://localhost:3002/v1/packages/@tapestry/core/1.0.0.tgz',
+        },
+      },
+    });
+    fetchPackageMetadata.mockResolvedValue(makeRegistryMeta('@tapestry/core', '2.1.0'));
+    fetchTarball.mockResolvedValue(Buffer.from('fake'));
+
+    await install(undefined, { cwd: tmpDir });
+
+    expect(fetchPackageMetadata).toHaveBeenCalled();
+    const lock = readLock(tmpDir);
+    expect(lock.resolved['@tapestry/core'].version).toBe('2.1.0');
   });
 
   it('writes boot file after install', async () => {
