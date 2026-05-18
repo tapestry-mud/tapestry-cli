@@ -8,9 +8,9 @@ const FormData = require('form-data');
 const { readYaml } = require('../util/yaml');
 const { validate } = require('./validate');
 const { buildTarball, computeIntegrity } = require('../lib/tarball-builder');
+const { PACK_MANIFEST } = require('../lib/manifest');
 const { requireToken } = require('../lib/auth');
 const { DEFAULT_REGISTRY, throwIfError } = require('../lib/registry-client');
-const { PACK_MANIFEST } = require('../lib/manifest');
 
 async function publish({ cwd = process.cwd(), registryUrl = DEFAULT_REGISTRY } = {}) {
   validate({ cwd });

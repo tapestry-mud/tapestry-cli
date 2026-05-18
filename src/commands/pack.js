@@ -3,8 +3,8 @@
 const path = require('path');
 const { readYaml } = require('../util/yaml');
 const { buildTarball, computeIntegrity } = require('../lib/tarball-builder');
-const { validate } = require('./validate');
 const { PACK_MANIFEST } = require('../lib/manifest');
+const { validate } = require('./validate');
 
 async function pack({ cwd = process.cwd() } = {}) {
   validate({ cwd });
