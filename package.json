@@ -2,6 +2,10 @@
   "name": "@tapestry-mud/cli",
   "version": "0.5.0",
   "description": "CLI for the Tapestry MUD engine",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tapestry-mud/tapestry-cli.git"
+  },
   "bin": {
     "tapestry": "./bin/tapestry.js"
   },
