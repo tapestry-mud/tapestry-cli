@@ -18,6 +18,7 @@ const { publish } = require('../src/commands/publish');
 const { search } = require('../src/commands/search');
 const { info } = require('../src/commands/info');
 const { list } = require('../src/commands/list');
+const { link, unlink, linkList } = require('../src/commands/link');
 const { outdated } = require('../src/commands/outdated');
 const { engineInstall, engineUpdate, engineInfo } = require('../src/commands/engine');
 const { engineVersions } = require('../src/commands/engine-versions');
@@ -40,7 +41,7 @@ program.configureHelp({
     const groups = [
       {
         title: 'Pack Management',
-        commands: ['uninstall', 'update', 'list', 'enable', 'disable', 'outdated'],
+        commands: ['uninstall', 'update', 'list', 'enable', 'disable', 'outdated', 'link', 'unlink'],
       },
       {
         title: 'Engine',
@@ -331,6 +332,35 @@ program
   .action(async () => {
     try {
       await outdated();
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('link [path]')
+  .description('Attach a local pack working copy to this project (use --list to show links)')
+  .option('--list', 'List active links instead of creating one')
+  .action(async (linkPath, options) => {
+    try {
+      if (options.list || !linkPath) {
+        await linkList();
+      } else {
+        await link(linkPath);
+      }
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('unlink <name>')
+  .description('Detach a linked pack and restore the registry copy on next install')
+  .action(async (name) => {
+    try {
+      await unlink(name);
     } catch (e) {
       console.error(`error: ${e.message}`);
       process.exit(1);
