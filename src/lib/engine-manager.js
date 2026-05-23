@@ -7,7 +7,7 @@ const { readYaml } = require('../util/yaml');
 const { writePid, readPid, clearPid } = require('./process-tracker');
 const fetch = require('node-fetch');
 const { DEFAULT_REGISTRY } = require('./registry-client');
-const { dockerLinkMounts } = require('./links');
+const { dockerLinkMounts, materializeLinks } = require('./links');
 
 const NAMED_CHANNELS = ['nightly', 'stable'];
 
@@ -326,8 +326,10 @@ async function startEngine(cwd) {
     const tag = await resolveDockerTag(config);
     dockerStart(config.projectName, config.image, tag, packsDir, serverYamlPath, dataDir, config.network, dockerLinkMounts(cwd));
   } else if (config.mode === 'binary') {
+    materializeLinks(cwd);
     binaryStart(config.version, config.installDir, packsDir, serverYamlPath, cwd);
   } else {
+    materializeLinks(cwd);
     sourceStart(config.installDir, packsDir, serverYamlPath, cwd);
   }
 }

@@ -619,6 +619,19 @@ describe('source mode', () => {
       fs.rmSync(path.join(tmpDir, '.tapestry-engine', 'source'), { recursive: true });
       await expect(startEngine(tmpDir)).rejects.toThrow('Engine source not found');
     });
+
+    it('materializes a symlink for a linked pack before launching', async () => {
+      const { addLink } = require('../../src/lib/links');
+      const linkTarget = path.join(tmpDir, 'lf-src');
+      fs.mkdirSync(linkTarget, { recursive: true });
+      fs.writeFileSync(path.join(linkTarget, 'pack.yaml'), 'name: "@mallek/lf"\n');
+      addLink(tmpDir, '@mallek/lf', linkTarget);
+
+      await startEngine(tmpDir);
+
+      const linkPath = path.join(tmpDir, 'packs', '@mallek', 'lf');
+      expect(fs.lstatSync(linkPath).isSymbolicLink()).toBe(true);
+    });
   });
 
   describe('stopEngine', () => {
