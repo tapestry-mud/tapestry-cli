@@ -310,6 +310,20 @@ describe('docker mode', () => {
       const runCall = spawnSync.mock.calls.find(c => c[1] && c[1].includes('run'));
       expect(runCall[1]).not.toContain('--network');
     });
+
+    it('adds a -v bind mount for each linked pack at the scoped container path', async () => {
+      const { addLink } = require('../../src/lib/links');
+      const linkTarget = path.join(tmpDir, 'lf-src');
+      fs.mkdirSync(linkTarget, { recursive: true });
+      addLink(tmpDir, '@mallek/legends-forgotten', linkTarget);
+
+      await startEngine(tmpDir);
+
+      const runCall = spawnSync.mock.calls.find(c => c[1] && c[1].includes('run'));
+      const args = runCall[1];
+      const volArgs = args.filter((_, i) => args[i - 1] === '-v');
+      expect(volArgs).toContain(`${linkTarget}:/app/packs/@mallek/legends-forgotten`);
+    });
   });
 
   describe('stopEngine', () => {

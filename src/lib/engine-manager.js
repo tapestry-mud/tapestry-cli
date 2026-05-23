@@ -7,6 +7,7 @@ const { readYaml } = require('../util/yaml');
 const { writePid, readPid, clearPid } = require('./process-tracker');
 const fetch = require('node-fetch');
 const { DEFAULT_REGISTRY } = require('./registry-client');
+const { dockerLinkMounts } = require('./links');
 
 const NAMED_CHANNELS = ['nightly', 'stable'];
 
@@ -65,7 +66,7 @@ function dockerEnsureImage(image, version) {
   }
 }
 
-function dockerStart(projectName, image, version, packsDir, serverYamlPath, dataDir, network) {
+function dockerStart(projectName, image, version, packsDir, serverYamlPath, dataDir, network, linkMounts = []) {
   const containerName = `tapestry-${projectName}`;
   dockerEnsureImage(image, version);
   spawnSync('docker', ['rm', '-f', containerName], { stdio: 'ignore' });
@@ -77,6 +78,7 @@ function dockerStart(projectName, image, version, packsDir, serverYamlPath, data
     '-v', `${packsDir}:/app/packs`,
     '-v', `${serverYamlPath}:/app/server.yaml`,
     '-v', `${dataDir}:/app/data`,
+    ...linkMounts,
   ];
   if (network) {
     args.push('--network', network);
@@ -322,7 +324,7 @@ async function startEngine(cwd) {
   fs.mkdirSync(dataDir, { recursive: true });
   if (config.mode === 'docker') {
     const tag = await resolveDockerTag(config);
-    dockerStart(config.projectName, config.image, tag, packsDir, serverYamlPath, dataDir, config.network);
+    dockerStart(config.projectName, config.image, tag, packsDir, serverYamlPath, dataDir, config.network, dockerLinkMounts(cwd));
   } else if (config.mode === 'binary') {
     binaryStart(config.version, config.installDir, packsDir, serverYamlPath, cwd);
   } else {
