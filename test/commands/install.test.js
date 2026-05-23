@@ -246,6 +246,31 @@ describe('install @scope/name (with package arg)', () => {
   });
 });
 
+describe('install with linked packages', () => {
+  const { addLink } = require('../../src/lib/links');
+
+  it('skips a linked package instead of downloading it', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tapestry-install-link-'));
+    writeYaml(path.join(tmp, 'tapestry.yaml'), {
+      name: 'g', engine: { version: '0.4.0', mode: 'docker' },
+      dependencies: { '@mallek/lf': '^0.1.0' },
+    });
+    const target = path.join(tmp, 'lf-src');
+    fs.mkdirSync(target);
+    addLink(tmp, '@mallek/lf', target);
+
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    await install(undefined, { cwd: tmp });
+
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('skipping @mallek/lf (linked)');
+    // the linked package must not have been written into packs/
+    expect(fs.existsSync(path.join(tmp, 'packs', '@mallek', 'lf', 'pack.yaml'))).toBe(false);
+
+    logSpy.mockRestore();
+    fs.rmSync(tmp, { recursive: true });
+  });
+});
+
 describe('auth token forwarding', () => {
   it('passes token to fetchPackageMetadata when logged in', async () => {
     writeProjectManifest(tmpDir, { '@tapestry/core': '^1.0.0' });

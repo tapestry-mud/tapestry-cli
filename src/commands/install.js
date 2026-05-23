@@ -11,6 +11,7 @@ const { verifyIntegrity, saveTarball, extractTarball } = require('../lib/tarball
 const { addPackageToBoot } = require('../lib/boot');
 const { loadToken } = require('../lib/auth');
 const { PACK_MANIFEST } = require('../lib/manifest');
+const { readLinks } = require('../lib/links');
 
 function packInstallPath(cwd, packageName) {
   const parts = packageName.split('/');
@@ -34,7 +35,12 @@ function isLockCurrent(manifestDeps, lock) {
 }
 
 async function installResolved(cwd, resolved, token) {
+  const { links } = readLinks(cwd);
   for (const [packageName, info] of Object.entries(resolved)) {
+    if (packageName in links) {
+      console.log(`  skipping ${packageName} (linked)`);
+      continue;
+    }
     const destDir = packInstallPath(cwd, packageName);
 
     if (fs.existsSync(destDir)) {
@@ -98,13 +104,22 @@ async function install(packageArg, { cwd = process.cwd(), registryUrl = DEFAULT_
 
     writeYaml(manifestPath, manifest);
   } else {
+    const { links } = readLinks(cwd);
+    for (const name of Object.keys(links)) {
+      if ((manifest.dependencies || {})[name] !== undefined) {
+        console.log(`  skipping ${name} (linked)`);
+      }
+    }
+    const depsToResolve = Object.fromEntries(
+      Object.entries(manifest.dependencies || {}).filter(([name]) => !(name in links))
+    );
     const lock = readLock(cwd);
-    if (lock && isLockCurrent(manifest.dependencies || {}, lock)) {
+    if (lock && isLockCurrent(depsToResolve, lock)) {
       console.log('Installing from lock file...');
       resolved = lock.resolved;
     } else {
       console.log('Resolving dependencies...');
-      resolved = await resolve(manifest.dependencies || {}, registryUrl, token);
+      resolved = await resolve(depsToResolve, registryUrl, token);
     }
   }
 
