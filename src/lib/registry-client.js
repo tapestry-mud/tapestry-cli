@@ -116,7 +116,19 @@ async function patchPreset(name, payload, token, registryUrl = DEFAULT_REGISTRY)
   return res.json();
 }
 
+async function deletePreset(name, token, registryUrl = DEFAULT_REGISTRY) {
+  const url = `${registryUrl.replace(/\/$/, '')}/v1/admin/presets/${name}`;
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  await throwIfError(res, `Failed to delete preset '${name}'`);
+  return res.json();
+}
+
 module.exports = {
   fetchPackageMetadata, fetchTarball, throwIfError, DEFAULT_REGISTRY,
-  fetchPreset, fetchPresetList, patchDistTag, listDistTags, patchPreset,
+  fetchPreset, fetchPresetList, patchDistTag, listDistTags, patchPreset, deletePreset,
 };

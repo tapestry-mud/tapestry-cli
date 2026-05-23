@@ -27,7 +27,7 @@ const { stopCmd } = require('../src/commands/stop');
 const { changePassword } = require('../src/commands/change-password');
 const { unpublish } = require('../src/commands/unpublish');
 const { distTagSet, distTagList } = require('../src/commands/dist-tag');
-const { presetSet } = require('../src/commands/preset');
+const { presetSet, presetDelete } = require('../src/commands/preset');
 
 const program = new Command();
 
@@ -163,6 +163,18 @@ presetCmd
     try {
       const packs = JSON.parse(packsJson);
       await presetSet(name, version, engineChannel, packs);
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+presetCmd
+  .command('delete <name>')
+  .description('Delete a preset from the registry')
+  .action(async (name) => {
+    try {
+      await presetDelete(name);
     } catch (e) {
       console.error(`error: ${e.message}`);
       process.exit(1);

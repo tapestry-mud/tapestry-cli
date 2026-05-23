@@ -3,9 +3,9 @@
 jest.mock('../../src/lib/registry-client');
 jest.mock('../../src/lib/auth');
 
-const { patchPreset } = require('../../src/lib/registry-client');
+const { patchPreset, deletePreset } = require('../../src/lib/registry-client');
 const { requireToken } = require('../../src/lib/auth');
-const { presetSet } = require('../../src/commands/preset');
+const { presetSet, presetDelete } = require('../../src/commands/preset');
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -35,5 +35,24 @@ test('logs updated preset name after success', async () => {
   const log = jest.spyOn(console, 'log').mockImplementation();
   await presetSet('starter', '0.0.2', 'stable', { '@tapestry/core': '0.0.3' });
   expect(log.mock.calls.flat().join(' ')).toContain('starter');
+  log.mockRestore();
+});
+
+test('presetDelete calls deletePreset with name and token', async () => {
+  deletePreset.mockResolvedValue({ deleted: 'bad-preset' });
+  await presetDelete('bad-preset');
+  expect(deletePreset).toHaveBeenCalledWith('bad-preset', 'admin-token', expect.any(String));
+});
+
+test('presetDelete requires login', async () => {
+  requireToken.mockImplementation(() => { throw new Error('Not logged in. Run: tapestry login'); });
+  await expect(presetDelete('bad-preset')).rejects.toThrow('Not logged in');
+});
+
+test('presetDelete logs the deleted preset name', async () => {
+  deletePreset.mockResolvedValue({ deleted: 'bad-preset' });
+  const log = jest.spyOn(console, 'log').mockImplementation();
+  await presetDelete('bad-preset');
+  expect(log.mock.calls.flat().join(' ')).toContain('bad-preset');
   log.mockRestore();
 });

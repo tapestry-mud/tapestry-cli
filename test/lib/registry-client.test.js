@@ -134,7 +134,31 @@ describe('fetchTarball with auth token', () => {
   });
 });
 
-const { fetchPreset, patchDistTag, listDistTags, patchPreset } = require('../../src/lib/registry-client');
+const { fetchPreset, patchDistTag, listDistTags, patchPreset, deletePreset } = require('../../src/lib/registry-client');
+
+describe('deletePreset', () => {
+  beforeEach(() => {
+    fetch.mockReset();
+  });
+
+  it('sends DELETE to admin preset endpoint with auth', async () => {
+    fetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({ deleted: 'bad-preset' }) });
+    await deletePreset('bad-preset', 'admin-token', 'http://localhost:3002');
+    expect(fetch).toHaveBeenCalledWith(
+      'http://localhost:3002/v1/admin/presets/bad-preset',
+      expect.objectContaining({
+        method: 'DELETE',
+        headers: expect.objectContaining({ Authorization: 'Bearer admin-token' }),
+      })
+    );
+  });
+
+  it('throws when the preset does not exist', async () => {
+    fetch.mockResolvedValue({ ok: false, status: 404, json: () => Promise.resolve({ error: "Preset 'gone' not found" }) });
+    await expect(deletePreset('gone', 'admin-token', 'http://localhost:3002'))
+      .rejects.toThrow("Preset 'gone' not found");
+  });
+});
 
 describe('fetchPreset', () => {
   beforeEach(() => {
