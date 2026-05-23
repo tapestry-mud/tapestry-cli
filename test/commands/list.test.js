@@ -93,3 +93,23 @@ it('shows pack type from installed pack manifest when available', async () => {
   expect(output).toContain('module');
   spy.mockRestore();
 });
+
+describe('list with links', () => {
+  const { addLink } = require('../../src/lib/links');
+
+  it('prints a Linked section for active links', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tapestry-list-link-'));
+    writeYaml(path.join(tmp, 'tapestry.yaml'), { name: 'g', engine: { version: '0.4.0', mode: 'docker' }, dependencies: {} });
+    addLink(tmp, '@mallek/legends-forgotten', '/host/lf');
+
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    await list({ cwd: tmp });
+
+    const out = logSpy.mock.calls.flat().join('\n');
+    expect(out).toContain('Linked');
+    expect(out).toContain('@mallek/legends-forgotten -> /host/lf');
+
+    logSpy.mockRestore();
+    fs.rmSync(tmp, { recursive: true });
+  });
+});
