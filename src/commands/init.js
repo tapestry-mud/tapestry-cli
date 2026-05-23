@@ -238,7 +238,7 @@ async function init(cwd, { registryUrl = DEFAULT_REGISTRY, yes = false, prompter
   fs.mkdirSync(path.join(cwd, 'packs'), { recursive: true });
   fs.writeFileSync(
     path.join(cwd, '.gitignore'),
-    '# Installed packages (managed by tapestry install)\npacks/\n\n# Engine artifacts (managed by tapestry engine install)\n.tapestry-engine/\n\n# Game data (players, saves)\ndata/\n'
+    '# Installed packages (managed by tapestry install)\npacks/\n\n# Local pack links (managed by tapestry link)\ntapestry-links.yaml\n\n# Engine artifacts (managed by tapestry engine install)\n.tapestry-engine/\n\n# Game data (players, saves)\ndata/\n'
   );
 
   console.log('');

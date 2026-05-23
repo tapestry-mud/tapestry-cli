@@ -399,3 +399,11 @@ test('server.yaml includes commented link_dead section', async () => {
   expect(serverYaml).toContain('enabled:');
   expect(serverYaml).toContain('timeout_seconds:');
 });
+
+test('adds tapestry-links.yaml to the generated .gitignore', async () => {
+  const projectDir = path.join(tmpDir, 'my-game');
+  fs.mkdirSync(projectDir);
+  await init(projectDir, { yes: true });
+  const gitignore = fs.readFileSync(path.join(projectDir, '.gitignore'), 'utf8');
+  expect(gitignore.split(/\r?\n/)).toContain('tapestry-links.yaml');
+});
