@@ -75,3 +75,51 @@ describe('manifest + path helpers', () => {
       .toEqual(['-v', '/host/lf:/app/packs/@mallek/lf']);
   });
 });
+
+const {
+  materializeLinks, removeMaterializedLink, checkMissingDeps,
+} = require('../../src/lib/links');
+
+describe('materialize + dependency check', () => {
+  it('materializeLinks creates a symlink/junction at packs/@scope/name', () => {
+    const target = path.join(tmpDir, 'lf-src');
+    fs.mkdirSync(target);
+    fs.writeFileSync(path.join(target, 'pack.yaml'), 'name: "@mallek/lf"\n');
+    addLink(tmpDir, '@mallek/lf', target);
+
+    materializeLinks(tmpDir);
+
+    const linkPath = path.join(tmpDir, 'packs', '@mallek', 'lf');
+    expect(fs.lstatSync(linkPath).isSymbolicLink()).toBe(true);
+    expect(fs.existsSync(path.join(linkPath, 'pack.yaml'))).toBe(true);
+  });
+
+  it('materializeLinks throws when a linked path is gone', () => {
+    addLink(tmpDir, '@mallek/lf', path.join(tmpDir, 'does-not-exist'));
+    expect(() => materializeLinks(tmpDir)).toThrow('no longer exists');
+  });
+
+  it('removeMaterializedLink removes the junction but not the target', () => {
+    const target = path.join(tmpDir, 'lf-src');
+    fs.mkdirSync(target);
+    addLink(tmpDir, '@mallek/lf', target);
+    materializeLinks(tmpDir);
+
+    removeMaterializedLink(tmpDir, '@mallek/lf');
+
+    expect(fs.existsSync(path.join(tmpDir, 'packs', '@mallek', 'lf'))).toBe(false);
+    expect(fs.existsSync(target)).toBe(true);
+  });
+
+  it('checkMissingDeps returns deps not present as install dir or link', () => {
+    const manifest = { dependencies: { '@tapestry/core': '^0.1.0', '@mallek/lf': '*' } };
+    addLink(tmpDir, '@mallek/lf', '/somewhere'); // lf satisfied by link
+    expect(checkMissingDeps(tmpDir, manifest)).toEqual(['@tapestry/core']);
+  });
+
+  it('checkMissingDeps treats an installed dir as satisfied', () => {
+    fs.mkdirSync(path.join(tmpDir, 'packs', '@tapestry', 'core'), { recursive: true });
+    const manifest = { dependencies: { '@tapestry/core': '^0.1.0' } };
+    expect(checkMissingDeps(tmpDir, manifest)).toEqual([]);
+  });
+});

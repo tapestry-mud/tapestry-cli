@@ -64,7 +64,57 @@ function dockerLinkMounts(cwd) {
   return args;
 }
 
+function lexists(p) {
+  try {
+    fs.lstatSync(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function symlinkType() {
+  return process.platform === 'win32' ? 'junction' : 'dir';
+}
+
+function materializeLinks(cwd) {
+  const { links } = readLinks(cwd);
+  for (const [name, absPath] of Object.entries(links)) {
+    if (!fs.existsSync(absPath)) {
+      throw new Error(`Linked pack '${name}' points to ${absPath}, which no longer exists. Run 'tapestry unlink ${name}' or restore the path.`);
+    }
+    const linkPath = packLinkPath(cwd, name);
+    if (lexists(linkPath)) {
+      fs.rmSync(linkPath, { recursive: true, force: true });
+    }
+    fs.mkdirSync(path.dirname(linkPath), { recursive: true });
+    fs.symlinkSync(absPath, linkPath, symlinkType());
+  }
+}
+
+function removeMaterializedLink(cwd, name) {
+  const linkPath = packLinkPath(cwd, name);
+  if (lexists(linkPath)) {
+    fs.rmSync(linkPath, { recursive: true, force: true });
+  }
+}
+
+function checkMissingDeps(cwd, manifest) {
+  const deps = (manifest && manifest.dependencies) || {};
+  const { links } = readLinks(cwd);
+  const missing = [];
+  for (const depName of Object.keys(deps)) {
+    const installed = fs.existsSync(packLinkPath(cwd, depName));
+    const linked = depName in links;
+    if (!installed && !linked) {
+      missing.push(depName);
+    }
+  }
+  return missing;
+}
+
 module.exports = {
   LINKS_FILE, readLinks, writeLinks, addLink, removeLink,
   readPackManifest, packLinkPath, containerPackTarget, dockerLinkMounts,
+  materializeLinks, removeMaterializedLink, checkMissingDeps,
 };
