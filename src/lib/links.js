@@ -2,6 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const semver = require('semver');
 const { readYaml, writeYaml } = require('../util/yaml');
 const { PACK_MANIFEST } = require('./manifest');
 
@@ -113,8 +114,34 @@ function checkMissingDeps(cwd, manifest) {
   return missing;
 }
 
+function partitionDeps(cwd, manifest) {
+  const deps = (manifest && manifest.dependencies) || {};
+  const needsInstall = {};
+  if (Object.keys(deps).length === 0) {
+    return { needsInstall };
+  }
+  const { links } = readLinks(cwd);
+  for (const [depName, range] of Object.entries(deps)) {
+    if (depName in links) {
+      continue;
+    }
+    const installPath = packLinkPath(cwd, depName);
+    if (fs.existsSync(installPath)) {
+      const manifestPath = path.join(installPath, PACK_MANIFEST);
+      if (fs.existsSync(manifestPath)) {
+        const installed = readYaml(manifestPath) || {};
+        if (installed.version && semver.satisfies(installed.version, range)) {
+          continue;
+        }
+      }
+    }
+    needsInstall[depName] = range;
+  }
+  return { needsInstall };
+}
+
 module.exports = {
   LINKS_FILE, readLinks, writeLinks, addLink, removeLink,
   readPackManifest, packLinkPath, containerPackTarget, dockerLinkMounts,
-  materializeLinks, removeMaterializedLink, checkMissingDeps,
+  materializeLinks, removeMaterializedLink, checkMissingDeps, partitionDeps,
 };

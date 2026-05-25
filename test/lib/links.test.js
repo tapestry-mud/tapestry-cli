@@ -123,3 +123,62 @@ describe('materialize + dependency check', () => {
     expect(checkMissingDeps(tmpDir, manifest)).toEqual([]);
   });
 });
+
+const { partitionDeps } = require('../../src/lib/links');
+
+describe('partitionDeps', () => {
+  it('returns empty needsInstall when manifest has no dependencies', () => {
+    expect(partitionDeps(tmpDir, {})).toEqual({ needsInstall: {} });
+    expect(partitionDeps(tmpDir, { dependencies: {} })).toEqual({ needsInstall: {} });
+  });
+
+  it('satisfies a linked dep without a version check', () => {
+    addLink(tmpDir, '@tapestry/core', '/somewhere');
+    const manifest = { dependencies: { '@tapestry/core': '^0.1.0' } };
+    expect(partitionDeps(tmpDir, manifest)).toEqual({ needsInstall: {} });
+  });
+
+  it('satisfies an installed dep whose version matches the range', () => {
+    fs.mkdirSync(path.join(tmpDir, 'packs', '@tapestry', 'core'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, 'packs', '@tapestry', 'core', 'pack.yaml'),
+      'name: "@tapestry/core"\nversion: "0.2.1"\n'
+    );
+    const manifest = { dependencies: { '@tapestry/core': '^0.2.0' } };
+    expect(partitionDeps(tmpDir, manifest)).toEqual({ needsInstall: {} });
+  });
+
+  it('marks an installed dep as needs-install when version is too old', () => {
+    fs.mkdirSync(path.join(tmpDir, 'packs', '@tapestry', 'core'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, 'packs', '@tapestry', 'core', 'pack.yaml'),
+      'name: "@tapestry/core"\nversion: "0.1.0"\n'
+    );
+    const manifest = { dependencies: { '@tapestry/core': '^0.2.0' } };
+    expect(partitionDeps(tmpDir, manifest)).toEqual({ needsInstall: { '@tapestry/core': '^0.2.0' } });
+  });
+
+  it('marks a completely absent dep as needs-install', () => {
+    const manifest = { dependencies: { '@tapestry/cooking': '^0.1.0' } };
+    expect(partitionDeps(tmpDir, manifest)).toEqual({ needsInstall: { '@tapestry/cooking': '^0.1.0' } });
+  });
+
+  it('handles a mix of satisfied and unsatisfied deps', () => {
+    addLink(tmpDir, '@tapestry/core', '/somewhere');
+    fs.mkdirSync(path.join(tmpDir, 'packs', '@tapestry', 'survival'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, 'packs', '@tapestry', 'survival', 'pack.yaml'),
+      'name: "@tapestry/survival"\nversion: "0.1.0"\n'
+    );
+    const manifest = {
+      dependencies: {
+        '@tapestry/core': '^0.1.0',      // linked — satisfied
+        '@tapestry/survival': '^0.1.0',   // installed, version ok — satisfied
+        '@tapestry/cooking': '^0.1.0',    // absent — needs install
+      },
+    };
+    expect(partitionDeps(tmpDir, manifest)).toEqual({
+      needsInstall: { '@tapestry/cooking': '^0.1.0' },
+    });
+  });
+});
