@@ -354,12 +354,13 @@ program
   .command('link [path]')
   .description('Attach a local pack working copy to this project (use --list to show links)')
   .option('--list', 'List active links instead of creating one')
+  .option('--skip-install', 'Skip dependency resolution; warn about missing deps instead')
   .action(async (linkPath, options) => {
     try {
       if (options.list || !linkPath) {
         await linkList();
       } else {
-        await link(linkPath);
+        await link(linkPath, { noInstall: !!options.skipInstall });
       }
     } catch (e) {
       console.error(`error: ${e.message}`);
