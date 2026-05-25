@@ -245,10 +245,10 @@ describe('link rollback on failure', () => {
     expect(fs.existsSync(cookingPath)).toBe(false);
   });
 
-  it('error message suggests --no-install', async () => {
+  it('error message suggests --skip-install', async () => {
     makeProject(); makePack({ '@tapestry/cooking': '^0.1.0' });
     resolve.mockRejectedValue(new Error('registry unreachable'));
-    await expect(link(packDir, { cwd: tmpDir })).rejects.toThrow('--no-install');
+    await expect(link(packDir, { cwd: tmpDir })).rejects.toThrow('--skip-install');
   });
 });
 

@@ -72,10 +72,12 @@ async function link(targetPath, { cwd = process.cwd(), noInstall = false, regist
     const token = loadToken();
     const resolved = await resolve(needsInstall, registryUrl, token);
 
-    // Capture all packages in the resolved set not yet on disk — for rollback if install fails
-    toRollback = Object.keys(resolved).filter(
-      (n) => !fs.existsSync(packInstallPath(cwd, n))
-    );
+    // New installs: not on disk yet. Upgrade targets: in needsInstall AND on disk
+    // (installResolved deletes the old dir before downloading; track so rollback removes the boot entry)
+    toRollback = [
+      ...Object.keys(resolved).filter((n) => !fs.existsSync(packInstallPath(cwd, n))),
+      ...Object.keys(needsInstall).filter((n) => fs.existsSync(packInstallPath(cwd, n))),
+    ];
 
     await installResolved(cwd, resolved, token);
 
@@ -102,7 +104,7 @@ async function link(targetPath, { cwd = process.cwd(), noInstall = false, regist
       removePackageFromBoot(cwd, pkgName);
     }
     throw new Error(
-      `Cannot resolve dependencies for ${name} — ${err.message}. Use --no-install to link without dependency resolution.`
+      `Cannot resolve dependencies for ${name} — ${err.message}. Use --skip-install to link without dependency resolution.`
     );
   }
 }
