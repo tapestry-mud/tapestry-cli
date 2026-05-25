@@ -129,4 +129,4 @@ async function install(packageArg, { cwd = process.cwd(), registryUrl = DEFAULT_
   console.log('Done.');
 }
 
-module.exports = { install };
+module.exports = { install, installResolved, packInstallPath };
