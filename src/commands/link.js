@@ -4,9 +4,14 @@ const fs = require('fs');
 const path = require('path');
 const {
   readLinks, addLink, removeLink, readPackManifest,
-  removeMaterializedLink, checkMissingDeps,
+  removeMaterializedLink, checkMissingDeps, partitionDeps,
 } = require('../lib/links');
 const { addPackageToBoot, removePackageFromBoot } = require('../lib/boot');
+const { resolve } = require('../lib/semver-resolver');
+const { installResolved, packInstallPath } = require('./install');
+const { readLock, writeLock } = require('../lib/lock-file');
+const { loadToken } = require('../lib/auth');
+const { DEFAULT_REGISTRY } = require('../lib/registry-client');
 
 function requireProject(cwd) {
   if (!fs.existsSync(path.join(cwd, 'tapestry.yaml'))) {
@@ -25,7 +30,7 @@ function ensureGitignore(cwd) {
   }
 }
 
-async function link(targetPath, { cwd = process.cwd() } = {}) {
+async function link(targetPath, { cwd = process.cwd(), noInstall = false, registryUrl = DEFAULT_REGISTRY } = {}) {
   requireProject(cwd);
   const absPath = path.resolve(cwd, targetPath);
   if (!fs.existsSync(absPath)) {
@@ -41,14 +46,57 @@ async function link(targetPath, { cwd = process.cwd() } = {}) {
   addPackageToBoot(cwd, name, manifest);
   ensureGitignore(cwd);
 
-  console.log(`linked ${name} -> ${absPath}`);
-
-  if (manifest.active === false) {
-    console.warn(`  warning: ${name} is marked active: false; it will not load until activated`);
+  if (noInstall) {
+    console.log(`linked ${name} -> ${absPath}`);
+    if (manifest.active === false) {
+      console.warn(`  warning: ${name} is marked active: false; it will not load until activated`);
+    }
+    for (const dep of checkMissingDeps(cwd, manifest)) {
+      const range = manifest.dependencies[dep];
+      console.warn(`  warning: missing dependency ${dep} (${range}) -- run: tapestry install ${dep}`);
+    }
+    return;
   }
-  for (const dep of checkMissingDeps(cwd, manifest)) {
-    const range = manifest.dependencies[dep];
-    console.warn(`  warning: missing dependency ${dep} (${range}) -- run: tapestry install ${dep}`);
+
+  const { needsInstall } = partitionDeps(cwd, manifest);
+
+  if (Object.keys(needsInstall).length === 0) {
+    console.log(`linked ${name} -> ${absPath}`);
+    return;
+  }
+
+  // Capture which packages are not yet in packs/ so we know what to remove on rollback
+  const toRollback = Object.keys(needsInstall).filter(
+    (n) => !fs.existsSync(packInstallPath(cwd, n))
+  );
+
+  let resolved;
+  try {
+    const token = loadToken();
+    resolved = await resolve(needsInstall, registryUrl, token);
+    await installResolved(cwd, resolved, token);
+
+    const lock = readLock(cwd) || { lockfile_version: 1, resolved: {} };
+    lock.resolved = Object.assign({}, lock.resolved || {}, resolved);
+    writeLock(cwd, lock);
+
+    console.log(`linked ${name} -> ${absPath}`);
+    for (const [pkgName, info] of Object.entries(resolved)) {
+      console.log(`  installed ${pkgName}@${info.version} (dependency of ${name})`);
+    }
+  } catch (err) {
+    removeLink(cwd, name);
+    removePackageFromBoot(cwd, name);
+    for (const pkgName of toRollback) {
+      const installPath = packInstallPath(cwd, pkgName);
+      if (fs.existsSync(installPath)) {
+        fs.rmSync(installPath, { recursive: true });
+      }
+      removePackageFromBoot(cwd, pkgName);
+    }
+    throw new Error(
+      `Cannot resolve dependencies for ${name} — ${err.message}. Use --no-install to link without dependency resolution.`
+    );
   }
 }
 
