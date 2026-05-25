@@ -67,15 +67,16 @@ async function link(targetPath, { cwd = process.cwd(), noInstall = false, regist
     return;
   }
 
-  // Capture which packages are not yet in packs/ so we know what to remove on rollback
-  const toRollback = Object.keys(needsInstall).filter(
-    (n) => !fs.existsSync(packInstallPath(cwd, n))
-  );
-
-  let resolved;
+  let toRollback = [];
   try {
     const token = loadToken();
-    resolved = await resolve(needsInstall, registryUrl, token);
+    const resolved = await resolve(needsInstall, registryUrl, token);
+
+    // Capture all packages in the resolved set not yet on disk — for rollback if install fails
+    toRollback = Object.keys(resolved).filter(
+      (n) => !fs.existsSync(packInstallPath(cwd, n))
+    );
+
     await installResolved(cwd, resolved, token);
 
     const existingLock = readLock(cwd);

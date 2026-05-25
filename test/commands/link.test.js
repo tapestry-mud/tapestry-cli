@@ -196,6 +196,19 @@ describe('link --no-install', () => {
     expect(readLinks(tmpDir).links['@mallek/legends-forgotten']).toBe(path.resolve(packDir));
     jest.restoreAllMocks();
   });
+
+  it('warns about active: false when --no-install is used', async () => {
+    makeProject();
+    const inactivePack = path.join(tmpDir, 'inactive-src');
+    fs.mkdirSync(inactivePack, { recursive: true });
+    writeYaml(path.join(inactivePack, 'pack.yaml'), {
+      name: '@mallek/inactive', version: '0.1.0', active: false, dependencies: {},
+    });
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    await link(inactivePack, { cwd: tmpDir, noInstall: true });
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('active: false'));
+    warn.mockRestore();
+  });
 });
 
 describe('link rollback on failure', () => {
