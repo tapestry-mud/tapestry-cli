@@ -75,6 +75,19 @@ describe('link (no deps)', () => {
     expect(resolve).not.toHaveBeenCalled();
     expect(installResolved).not.toHaveBeenCalled();
   });
+
+  it('warns about active: false on the auto-install path (no deps)', async () => {
+    makeProject();
+    packDir = path.join(tmpDir, 'inactive-src');
+    fs.mkdirSync(packDir, { recursive: true });
+    writeYaml(path.join(packDir, 'pack.yaml'), {
+      name: '@mallek/inactive-pack', version: '0.1.0', active: false, dependencies: {},
+    });
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    await link(packDir, { cwd: tmpDir });
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('active: false'));
+    warn.mockRestore();
+  });
 });
 
 describe('link (auto-install deps)', () => {

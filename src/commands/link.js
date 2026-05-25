@@ -46,11 +46,13 @@ async function link(targetPath, { cwd = process.cwd(), noInstall = false, regist
   addPackageToBoot(cwd, name, manifest);
   ensureGitignore(cwd);
 
+  // Warn if the pack is marked inactive — fires on all paths
+  if (manifest.active === false) {
+    console.warn(`  warning: ${name} is marked active: false; it will not load until activated`);
+  }
+
   if (noInstall) {
     console.log(`linked ${name} -> ${absPath}`);
-    if (manifest.active === false) {
-      console.warn(`  warning: ${name} is marked active: false; it will not load until activated`);
-    }
     for (const dep of checkMissingDeps(cwd, manifest)) {
       const range = manifest.dependencies[dep];
       console.warn(`  warning: missing dependency ${dep} (${range}) -- run: tapestry install ${dep}`);
@@ -76,9 +78,13 @@ async function link(targetPath, { cwd = process.cwd(), noInstall = false, regist
     resolved = await resolve(needsInstall, registryUrl, token);
     await installResolved(cwd, resolved, token);
 
-    const lock = readLock(cwd) || { lockfile_version: 1, resolved: {} };
-    lock.resolved = Object.assign({}, lock.resolved || {}, resolved);
-    writeLock(cwd, lock);
+    const existingLock = readLock(cwd);
+    const mergedResolved = Object.assign({}, (existingLock && existingLock.resolved) || {}, resolved);
+    writeLock(cwd, {
+      lockfile_version: 1,
+      ...(existingLock && existingLock.deps_hash ? { deps_hash: existingLock.deps_hash } : {}),
+      resolved: mergedResolved,
+    });
 
     console.log(`linked ${name} -> ${absPath}`);
     for (const [pkgName, info] of Object.entries(resolved)) {
