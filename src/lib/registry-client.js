@@ -128,7 +128,18 @@ async function deletePreset(name, token, registryUrl = DEFAULT_REGISTRY) {
   return res.json();
 }
 
+async function postLogout(refreshToken, registryUrl = DEFAULT_REGISTRY) {
+  const res = await fetch(`${registryUrl.replace(/\/$/, '')}/v1/auth/logout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+  await throwIfError(res, 'Logout failed');
+  return res.json();
+}
+
 module.exports = {
   fetchPackageMetadata, fetchTarball, throwIfError, DEFAULT_REGISTRY,
   fetchPreset, fetchPresetList, patchDistTag, listDistTags, patchPreset, deletePreset,
+  postLogout,
 };

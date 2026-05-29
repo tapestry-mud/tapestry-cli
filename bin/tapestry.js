@@ -11,6 +11,7 @@ const { update } = require('../src/commands/update');
 const { enable } = require('../src/commands/enable');
 const { disable } = require('../src/commands/disable');
 const { login } = require('../src/commands/login');
+const { logout } = require('../src/commands/logout');
 const { register } = require('../src/commands/register');
 const { validate } = require('../src/commands/validate');
 const { pack } = require('../src/commands/pack');
@@ -53,7 +54,7 @@ program.configureHelp({
       },
       {
         title: 'Account',
-        commands: ['register', 'login', 'change-password'],
+        commands: ['register', 'login', 'logout', 'change-password'],
       },
       {
         title: 'Pack Authoring',
@@ -247,6 +248,18 @@ program
   .action(async () => {
     try {
       await login();
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('logout')
+  .description('Revoke your session and remove ~/.tapestryrc')
+  .action(async () => {
+    try {
+      await logout();
     } catch (e) {
       console.error(`error: ${e.message}`);
       process.exit(1);
