@@ -166,9 +166,21 @@ async function deleteTrustedPublisher(id, token, registryUrl = DEFAULT_REGISTRY)
   return res.json();
 }
 
+async function exchangeOIDCForAccess(scope, idToken, registryUrl = DEFAULT_REGISTRY) {
+  const res = await fetch(`${registryUrl.replace(/\/$/, '')}/v1/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+    body: JSON.stringify({ scope }),
+  });
+  await throwIfError(res, 'OIDC token exchange failed');
+  const { access_token } = await res.json();
+  return access_token;
+}
+
 module.exports = {
   fetchPackageMetadata, fetchTarball, throwIfError, DEFAULT_REGISTRY,
   fetchPreset, fetchPresetList, patchDistTag, listDistTags, patchPreset, deletePreset,
   postLogout,
   createTrustedPublisher, listTrustedPublishers, deleteTrustedPublisher,
+  exchangeOIDCForAccess,
 };
