@@ -1,66 +1,62 @@
 'use strict';
 
 const fs = require('fs');
-const path = require('path');
+const { saveSession, clearSession, loadAccess, requireAccess, decodeExp, RC_PATH } = require('../../src/lib/auth');
 
-const { loadToken, saveToken, requireToken, RC_PATH } = require('../../src/lib/auth');
+// A JWT whose payload is {exp}. Signature is irrelevant to the CLI (it never verifies).
+function fakeJwt(payload) {
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  return `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64(payload)}.sig`;
+}
 
-describe('loadToken', () => {
-  afterEach(() => {
-    jest.restoreAllMocks();
+afterEach(() => jest.restoreAllMocks());
+
+describe('decodeExp', () => {
+  it('reads the exp claim from a JWT', () => {
+    expect(decodeExp(fakeJwt({ sub: 'x', exp: 1234 }))).toBe(1234);
   });
-
-  it('returns null when rc file does not exist', () => {
-    jest.spyOn(fs, 'existsSync').mockReturnValue(false);
-    expect(loadToken()).toBeNull();
-  });
-
-  it('returns token from rc file', () => {
-    jest.spyOn(fs, 'existsSync').mockReturnValue(true);
-    jest.spyOn(fs, 'readFileSync').mockReturnValue('token: my-jwt\n');
-    expect(loadToken()).toBe('my-jwt');
-  });
-
-  it('returns null when rc file is malformed', () => {
-    jest.spyOn(fs, 'existsSync').mockReturnValue(true);
-    jest.spyOn(fs, 'readFileSync').mockImplementation(() => {
-      throw new Error('read error');
-    });
-    expect(loadToken()).toBeNull();
-  });
-
-  it('returns null when rc file has no token field', () => {
-    jest.spyOn(fs, 'existsSync').mockReturnValue(true);
-    jest.spyOn(fs, 'readFileSync').mockReturnValue('other: value\n');
-    expect(loadToken()).toBeNull();
+  it('returns null on a malformed token', () => {
+    expect(decodeExp('garbage')).toBeNull();
   });
 });
 
-describe('saveToken', () => {
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
-  it('writes YAML with token to RC_PATH', () => {
+describe('saveSession', () => {
+  it('writes the 4-field session to RC_PATH at mode 0600', () => {
     const spy = jest.spyOn(fs, 'writeFileSync').mockImplementation(() => {});
-    saveToken('abc-jwt');
-    expect(spy).toHaveBeenCalledWith(RC_PATH, expect.stringContaining('abc-jwt'), { mode: 0o600 });
+    saveSession({ registry: 'https://r', access: 'a', access_exp: 99, refresh: 'r' });
+    expect(spy).toHaveBeenCalledWith(
+      RC_PATH,
+      expect.stringContaining('refresh: r'),
+      { mode: 0o600 }
+    );
   });
 });
 
-describe('requireToken', () => {
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
-  it('throws when not logged in', () => {
+describe('loadAccess', () => {
+  it('returns null when rc is absent', async () => {
     jest.spyOn(fs, 'existsSync').mockReturnValue(false);
-    expect(() => requireToken()).toThrow('Not logged in. Run: tapestry login');
+    expect(await loadAccess()).toBeNull();
   });
 
-  it('returns token when logged in', () => {
+  it('returns the access token when not near expiry', async () => {
+    const future = Math.floor(Date.now() / 1000) + 3600;
     jest.spyOn(fs, 'existsSync').mockReturnValue(true);
-    jest.spyOn(fs, 'readFileSync').mockReturnValue('token: valid-jwt\n');
-    expect(requireToken()).toBe('valid-jwt');
+    jest.spyOn(fs, 'readFileSync').mockReturnValue(
+      `registry: https://r\naccess: good-access\naccess_exp: ${future}\nrefresh: rr\n`
+    );
+    expect(await loadAccess()).toBe('good-access');
+  });
+
+  it('returns null for a legacy token-only rc (forces re-login)', async () => {
+    jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+    jest.spyOn(fs, 'readFileSync').mockReturnValue('token: legacy\n');
+    expect(await loadAccess()).toBeNull();
+  });
+});
+
+describe('requireAccess', () => {
+  it('throws when there is no session', async () => {
+    jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+    await expect(requireAccess()).rejects.toThrow('Not logged in. Run: tapestry login');
   });
 });
