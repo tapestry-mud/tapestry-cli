@@ -83,7 +83,11 @@ my-game/
 | `tapestry search [query]` | Search the registry by keyword |
 | `tapestry info [pack]` | Show pack metadata from the registry |
 | `tapestry register` | Create a registry account |
-| `tapestry login` | Authenticate with the registry |
+| `tapestry login` | Authenticate with the registry (interactive password login) |
+| `tapestry logout` | Revoke your session and remove `~/.tapestryrc` |
+| `tapestry trust add <scope> <repo>` | Authorize a GitHub repo to publish to a scope via OIDC |
+| `tapestry trust list` | List your trusted publishers |
+| `tapestry trust rm <id>` | Remove a trusted publisher binding |
 | `tapestry change-password` | Change your registry password |
 
 ### Pack Authoring
@@ -140,16 +144,23 @@ tapestry dist-tag set @yourscope/my-pack stable 0.1.0
 
 Players using `tapestry init` with a preset that references your pack will resolve to the tagged version.
 
-### CI Publishing
+### CI Publishing (GitHub Actions, OIDC)
 
-For automated pipelines, use token-based auth:
+`tapestry publish` auto-detects the GitHub Actions OIDC environment and exchanges a short-lived
+id-token for a registry access token — no stored secret, no `tapestry login` step. In your workflow:
 
-```bash
-tapestry login --token $REGISTRY_CI_TOKEN
-tapestry publish
+```yaml
+permissions:
+  id-token: write   # required for OIDC
 ```
 
-The CI token is a JWT issued by the registry bootstrap script. Store it as a secret in your CI environment.
+Authorize the repo once (scope owner or admin):
+
+```bash
+tapestry trust add yourscope your-org/your-repo
+```
+
+Then `tapestry publish` in CI just works. There is no `REGISTRY_CI_TOKEN` and no `--token` flag.
 
 ## Registry
 
