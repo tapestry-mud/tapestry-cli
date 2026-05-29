@@ -4,32 +4,37 @@ jest.mock('node-fetch');
 jest.mock('../../src/lib/auth');
 
 const fetch = require('node-fetch');
-const { saveToken } = require('../../src/lib/auth');
+const auth = require('../../src/lib/auth');
 const { register } = require('../../src/commands/register');
 
 beforeEach(() => {
   jest.clearAllMocks();
 });
 
-it('posts registration and saves token on success', async () => {
+function fakeAccess() {
+  return `${Buffer.from('{}').toString('base64url')}.${Buffer.from(JSON.stringify({ exp: 9999999999 })).toString('base64url')}.s`;
+}
+
+it('posts registration and saves a session on success', async () => {
   const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  const access = fakeAccess();
 
   fetch.mockResolvedValue({
     ok: true,
     status: 201,
-    json: async () => ({ token: 'new-jwt' }),
+    json: async () => ({ access_token: access, refresh_token: 'rr' }),
   });
 
-  await register({ handle: 'mallek', email: 'me@example.com', password: 'pass' });
+  await register({ handle: 'mallek', email: 'me@example.com', password: 'pass' }, { registryUrl: 'https://r' });
 
   expect(fetch).toHaveBeenCalledWith(
-    expect.stringContaining('/v1/auth/register'),
+    'https://r/v1/auth/register',
     expect.objectContaining({
       method: 'POST',
       body: JSON.stringify({ handle: 'mallek', email: 'me@example.com', password: 'pass' }),
     })
   );
-  expect(saveToken).toHaveBeenCalledWith('new-jwt');
+  expect(auth.saveSession).toHaveBeenCalledWith(expect.objectContaining({ registry: 'https://r', access, refresh: 'rr' }));
   expect(consoleSpy).toHaveBeenCalledWith('Registered as mallek. Logged in.');
 
   consoleSpy.mockRestore();
@@ -45,7 +50,7 @@ it('throws on conflict (handle taken)', async () => {
   await expect(
     register({ handle: 'taken', email: 'x@x.com', password: 'pw' })
   ).rejects.toThrow('handle or email already taken');
-  expect(saveToken).not.toHaveBeenCalled();
+  expect(auth.saveSession).not.toHaveBeenCalled();
 });
 
 it('throws generic message when server returns no error field', async () => {
@@ -64,7 +69,7 @@ it('uses custom registryUrl when provided', async () => {
   fetch.mockResolvedValue({
     ok: true,
     status: 201,
-    json: async () => ({ token: 'tok' }),
+    json: async () => ({ access_token: fakeAccess(), refresh_token: 'rr' }),
   });
 
   await register(

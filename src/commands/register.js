@@ -1,7 +1,7 @@
 'use strict';
 
 const fetch = require('node-fetch');
-const { saveToken } = require('../lib/auth');
+const { saveSession, decodeExp } = require('../lib/auth');
 const { DEFAULT_REGISTRY, throwIfError } = require('../lib/registry-client');
 const { createInterface, ask, askPassword } = require('../util/prompt');
 
@@ -30,8 +30,8 @@ async function register({ handle, email, password } = {}, { registryUrl = DEFAUL
 
   await throwIfError(res, 'Registration failed');
 
-  const { token } = await res.json();
-  saveToken(token);
+  const { access_token, refresh_token } = await res.json();
+  saveSession({ registry: registryUrl, access: access_token, access_exp: decodeExp(access_token), refresh: refresh_token });
   console.log(`Registered as ${handle}. Logged in.`);
 }
 
