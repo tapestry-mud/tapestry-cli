@@ -5,13 +5,13 @@ jest.mock('../../src/lib/auth');
 jest.mock('../../src/util/prompt');
 
 const fetch = require('node-fetch');
-const { requireToken } = require('../../src/lib/auth');
+const { requireAccess } = require('../../src/lib/auth');
 const { createInterface, ask } = require('../../src/util/prompt');
 const { unpublish } = require('../../src/commands/unpublish');
 
 beforeEach(() => {
   jest.clearAllMocks();
-  requireToken.mockReturnValue('test-token');
+  requireAccess.mockResolvedValue('test-token');
   createInterface.mockReturnValue({ close: jest.fn() });
 });
 
@@ -152,9 +152,7 @@ describe('error handling', () => {
   });
 
   it('throws if not logged in without calling fetch', async () => {
-    requireToken.mockImplementation(() => {
-      throw new Error('Not logged in. Run: tapestry login');
-    });
+    requireAccess.mockRejectedValue(new Error('Not logged in. Run: tapestry login'));
 
     await expect(unpublish('@scope/mypkg@1.0.0')).rejects.toThrow('Not logged in');
     expect(fetch).not.toHaveBeenCalled();

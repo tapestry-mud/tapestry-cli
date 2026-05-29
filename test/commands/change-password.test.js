@@ -5,13 +5,13 @@ jest.mock('../../src/lib/auth');
 jest.mock('../../src/util/prompt');
 
 const fetch = require('node-fetch');
-const { requireToken } = require('../../src/lib/auth');
+const { requireAccess } = require('../../src/lib/auth');
 const { createInterface, askPassword } = require('../../src/util/prompt');
 const { changePassword } = require('../../src/commands/change-password');
 
 beforeEach(() => {
   jest.clearAllMocks();
-  requireToken.mockReturnValue('test-token');
+  requireAccess.mockResolvedValue('test-token');
   createInterface.mockReturnValue({ close: jest.fn() });
 });
 
@@ -79,9 +79,7 @@ it('throws generic message when registry error body has no error field', async (
 });
 
 it('throws if not logged in without calling fetch', async () => {
-  requireToken.mockImplementation(() => {
-    throw new Error('Not logged in. Run: tapestry login');
-  });
+  requireAccess.mockRejectedValue(new Error('Not logged in. Run: tapestry login'));
 
   await expect(changePassword()).rejects.toThrow('Not logged in');
   expect(fetch).not.toHaveBeenCalled();

@@ -14,7 +14,7 @@ jest.mock('../../src/lib/auth');
 
 const { resolve } = require('../../src/lib/semver-resolver');
 const { installResolved, packInstallPath } = require('../../src/commands/install');
-const { loadToken } = require('../../src/lib/auth');
+const { loadAccess } = require('../../src/lib/auth');
 
 const { link, unlink, linkList } = require('../../src/commands/link');
 const { readLinks } = require('../../src/lib/links');
@@ -43,7 +43,7 @@ beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tapestry-link-'));
   resolve.mockReset();
   installResolved.mockReset();
-  loadToken.mockReturnValue(null);
+  loadAccess.mockResolvedValue(null);
   installResolved.mockResolvedValue(undefined);
   resolve.mockResolvedValue({});
 });

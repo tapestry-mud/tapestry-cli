@@ -8,7 +8,7 @@ jest.mock('../../src/lib/registry-client');
 jest.mock('../../src/lib/tarball');
 jest.mock('../../src/lib/auth');
 
-const { loadToken } = require('../../src/lib/auth');
+const { loadAccess } = require('../../src/lib/auth');
 
 const { fetchPackageMetadata, fetchTarball } = require('../../src/lib/registry-client');
 const { verifyIntegrity, saveTarball, extractTarball } = require('../../src/lib/tarball');
@@ -47,7 +47,7 @@ beforeEach(() => {
   verifyIntegrity.mockReset();
   saveTarball.mockReset();
   extractTarball.mockReset();
-  loadToken.mockReturnValue(null);
+  loadAccess.mockResolvedValue(null);
   // Default: write a minimal pack manifest so installResolved can read it after extraction.
   extractTarball.mockImplementation(async (_tarPath, destDir) => {
     fs.mkdirSync(destDir, { recursive: true });
@@ -274,7 +274,7 @@ describe('install with linked packages', () => {
 describe('auth token forwarding', () => {
   it('passes token to fetchPackageMetadata when logged in', async () => {
     writeProjectManifest(tmpDir, { '@tapestry/core': '^1.0.0' });
-    loadToken.mockReturnValue('user-token');
+    loadAccess.mockResolvedValue('user-token');
     fetchPackageMetadata.mockResolvedValue(makeRegistryMeta('@tapestry/core', '1.0.0'));
     fetchTarball.mockResolvedValue(Buffer.from('tarball'));
 
@@ -289,7 +289,7 @@ describe('auth token forwarding', () => {
 
   it('passes token to fetchTarball when logged in', async () => {
     writeProjectManifest(tmpDir, { '@tapestry/core': '^1.0.0' });
-    loadToken.mockReturnValue('user-token');
+    loadAccess.mockResolvedValue('user-token');
     fetchPackageMetadata.mockResolvedValue(makeRegistryMeta('@tapestry/core', '1.0.0'));
     fetchTarball.mockResolvedValue(Buffer.from('tarball'));
 
@@ -303,7 +303,7 @@ describe('auth token forwarding', () => {
 
   it('passes null token when not logged in', async () => {
     writeProjectManifest(tmpDir, { '@tapestry/core': '^1.0.0' });
-    loadToken.mockReturnValue(null);
+    loadAccess.mockResolvedValue(null);
     fetchPackageMetadata.mockResolvedValue(makeRegistryMeta('@tapestry/core', '1.0.0'));
     fetchTarball.mockResolvedValue(Buffer.from('tarball'));
 

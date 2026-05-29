@@ -4,12 +4,12 @@ jest.mock('../../src/lib/registry-client');
 jest.mock('../../src/lib/auth');
 
 const { patchPreset, deletePreset } = require('../../src/lib/registry-client');
-const { requireToken } = require('../../src/lib/auth');
+const { requireAccess } = require('../../src/lib/auth');
 const { presetSet, presetDelete } = require('../../src/commands/preset');
 
 beforeEach(() => {
   jest.clearAllMocks();
-  requireToken.mockReturnValue('admin-token');
+  requireAccess.mockResolvedValue('admin-token');
 });
 
 test('calls patchPreset with preset name and payload', async () => {
@@ -25,7 +25,7 @@ test('calls patchPreset with preset name and payload', async () => {
 });
 
 test('requires login', async () => {
-  requireToken.mockImplementation(() => { throw new Error('Not logged in. Run: tapestry login'); });
+  requireAccess.mockRejectedValue(new Error('Not logged in. Run: tapestry login'));
   await expect(presetSet('starter', '0.0.2', 'stable', {}))
     .rejects.toThrow('Not logged in');
 });
@@ -45,7 +45,7 @@ test('presetDelete calls deletePreset with name and token', async () => {
 });
 
 test('presetDelete requires login', async () => {
-  requireToken.mockImplementation(() => { throw new Error('Not logged in. Run: tapestry login'); });
+  requireAccess.mockRejectedValue(new Error('Not logged in. Run: tapestry login'));
   await expect(presetDelete('bad-preset')).rejects.toThrow('Not logged in');
 });
 

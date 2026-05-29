@@ -1,7 +1,7 @@
 'use strict';
 
 const fetch = require('node-fetch');
-const { requireToken } = require('../lib/auth');
+const { requireAccess } = require('../lib/auth');
 const { DEFAULT_REGISTRY } = require('../lib/registry-client');
 const { createInterface, ask } = require('../util/prompt');
 
@@ -16,7 +16,7 @@ function parsePackageArg(arg) {
 }
 
 async function unpublish(packageArg, { force = false, registryUrl = DEFAULT_REGISTRY } = {}) {
-  const token = requireToken();
+  const token = await requireAccess();
   const { pkg, version } = parsePackageArg(packageArg);
 
   if (!/^@[a-z0-9-]+\/[a-z0-9-]+$/.test(pkg)) {

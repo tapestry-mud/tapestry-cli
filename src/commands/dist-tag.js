@@ -1,10 +1,10 @@
 'use strict';
 
-const { requireToken } = require('../lib/auth');
+const { requireAccess } = require('../lib/auth');
 const { patchDistTag, listDistTags, DEFAULT_REGISTRY } = require('../lib/registry-client');
 
 async function distTagSet(packName, tag, version, { registryUrl = DEFAULT_REGISTRY } = {}) {
-  const token = requireToken();
+  const token = await requireAccess();
   await patchDistTag(packName, tag, version, token, registryUrl);
   console.log(`  ${packName}  ${tag} -> ${version}`);
   console.log('Done.');

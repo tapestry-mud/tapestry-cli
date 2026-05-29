@@ -9,7 +9,7 @@ const { readLock, writeLock, hashDeps } = require('../lib/lock-file');
 const { fetchTarball, DEFAULT_REGISTRY } = require('../lib/registry-client');
 const { verifyIntegrity, saveTarball, extractTarball } = require('../lib/tarball');
 const { addPackageToBoot } = require('../lib/boot');
-const { loadToken } = require('../lib/auth');
+const { loadAccess } = require('../lib/auth');
 const { PACK_MANIFEST } = require('../lib/manifest');
 const { readLinks } = require('../lib/links');
 
@@ -85,7 +85,7 @@ async function install(packageArg, { cwd = process.cwd(), registryUrl = DEFAULT_
     throw new Error('No tapestry.yaml found. Run `tapestry init` first.');
   }
 
-  const token = loadToken();
+  const token = await loadAccess();
   const manifest = readYaml(manifestPath);
   let resolved;
 

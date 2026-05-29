@@ -10,7 +10,7 @@ const { addPackageToBoot, removePackageFromBoot } = require('../lib/boot');
 const { resolve } = require('../lib/semver-resolver');
 const { installResolved, packInstallPath } = require('./install');
 const { readLock, writeLock } = require('../lib/lock-file');
-const { loadToken } = require('../lib/auth');
+const { loadAccess } = require('../lib/auth');
 const { DEFAULT_REGISTRY } = require('../lib/registry-client');
 
 function requireProject(cwd) {
@@ -69,7 +69,7 @@ async function link(targetPath, { cwd = process.cwd(), noInstall = false, regist
 
   let toRollback = [];
   try {
-    const token = loadToken();
+    const token = await loadAccess();
     const resolved = await resolve(needsInstall, registryUrl, token);
 
     // New installs: not on disk yet. Upgrade targets: in needsInstall AND on disk

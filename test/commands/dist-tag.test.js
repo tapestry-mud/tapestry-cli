@@ -4,12 +4,12 @@ jest.mock('../../src/lib/registry-client');
 jest.mock('../../src/lib/auth');
 
 const { patchDistTag, listDistTags } = require('../../src/lib/registry-client');
-const { requireToken } = require('../../src/lib/auth');
+const { requireAccess } = require('../../src/lib/auth');
 const { distTagSet, distTagList } = require('../../src/commands/dist-tag');
 
 beforeEach(() => {
   jest.clearAllMocks();
-  requireToken.mockReturnValue('test-token');
+  requireAccess.mockResolvedValue('test-token');
 });
 
 describe('distTagSet', () => {
@@ -23,7 +23,7 @@ describe('distTagSet', () => {
   });
 
   test('requires login', async () => {
-    requireToken.mockImplementation(() => { throw new Error('Not logged in. Run: tapestry login'); });
+    requireAccess.mockRejectedValue(new Error('Not logged in. Run: tapestry login'));
     await expect(distTagSet('@tapestry/core', 'stable', '1.0.0'))
       .rejects.toThrow('Not logged in');
   });
