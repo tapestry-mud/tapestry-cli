@@ -243,11 +243,10 @@ program
 
 program
   .command('login')
-  .description('Authenticate with the registry and store token in ~/.tapestryrc')
-  .option('--token <token>', 'Save a raw token directly (for CI use, skips interactive login)')
-  .action(async (options) => {
+  .description('Authenticate with the registry (interactive password login)')
+  .action(async () => {
     try {
-      await login({}, { token: options.token });
+      await login();
     } catch (e) {
       console.error(`error: ${e.message}`);
       process.exit(1);
