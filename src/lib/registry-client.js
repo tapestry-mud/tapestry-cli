@@ -138,8 +138,37 @@ async function postLogout(refreshToken, registryUrl = DEFAULT_REGISTRY) {
   return res.json();
 }
 
+async function createTrustedPublisher(body, token, registryUrl = DEFAULT_REGISTRY) {
+  const res = await fetch(`${registryUrl.replace(/\/$/, '')}/v1/trusted-publishers`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  await throwIfError(res, 'Failed to create trusted publisher');
+  return res.json();
+}
+
+async function listTrustedPublishers(scope, token, registryUrl = DEFAULT_REGISTRY) {
+  const q = scope ? `?scope=${encodeURIComponent(scope)}` : '';
+  const res = await fetch(`${registryUrl.replace(/\/$/, '')}/v1/trusted-publishers${q}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  await throwIfError(res, 'Failed to list trusted publishers');
+  return res.json();
+}
+
+async function deleteTrustedPublisher(id, token, registryUrl = DEFAULT_REGISTRY) {
+  const res = await fetch(`${registryUrl.replace(/\/$/, '')}/v1/trusted-publishers/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  await throwIfError(res, 'Failed to delete trusted publisher');
+  return res.json();
+}
+
 module.exports = {
   fetchPackageMetadata, fetchTarball, throwIfError, DEFAULT_REGISTRY,
   fetchPreset, fetchPresetList, patchDistTag, listDistTags, patchPreset, deletePreset,
   postLogout,
+  createTrustedPublisher, listTrustedPublishers, deleteTrustedPublisher,
 };

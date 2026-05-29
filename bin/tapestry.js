@@ -29,6 +29,7 @@ const { changePassword } = require('../src/commands/change-password');
 const { unpublish } = require('../src/commands/unpublish');
 const { distTagSet, distTagList } = require('../src/commands/dist-tag');
 const { presetSet, presetDelete } = require('../src/commands/preset');
+const { trustAdd, trustList, trustRm } = require('../src/commands/trust');
 
 const program = new Command();
 
@@ -59,6 +60,10 @@ program.configureHelp({
       {
         title: 'Pack Authoring',
         commands: ['create', 'validate', 'pack', 'publish', 'unpublish'],
+      },
+      {
+        title: 'Trusted Publishing',
+        commands: ['trust'],
       },
       {
         title: 'Admin',
@@ -272,6 +277,47 @@ program
   .action(async () => {
     try {
       await register();
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+const trustCmd = program.command('trust').description('Manage trusted publishers (OIDC CI publishing)');
+
+trustCmd
+  .command('add <scope> <repo>')
+  .description('Authorize a GitHub repo (owner/name) to publish to a scope via OIDC')
+  .option('--ref <ref>', 'Restrict to a git ref, e.g. refs/heads/master')
+  .option('--environment <env>', 'Restrict to a GitHub Actions environment')
+  .action(async (scope, repo, options) => {
+    try {
+      await trustAdd(scope, repo, { ref: options.ref, environment: options.environment });
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+trustCmd
+  .command('list')
+  .description('List trusted publishers you own (all, if admin)')
+  .option('--scope <scope>', 'Filter by scope')
+  .action(async (options) => {
+    try {
+      await trustList(options.scope);
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+trustCmd
+  .command('rm <id>')
+  .description('Remove a trusted publisher binding by id')
+  .action(async (id) => {
+    try {
+      await trustRm(id);
     } catch (e) {
       console.error(`error: ${e.message}`);
       process.exit(1);
