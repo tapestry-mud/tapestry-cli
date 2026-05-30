@@ -30,6 +30,7 @@ const { unpublish } = require('../src/commands/unpublish');
 const { distTagSet, distTagList } = require('../src/commands/dist-tag');
 const { presetSet, presetDelete } = require('../src/commands/preset');
 const { trustAdd, trustList, trustRm } = require('../src/commands/trust');
+const { exportArea } = require('../src/commands/export-area');
 
 const program = new Command();
 
@@ -59,7 +60,7 @@ program.configureHelp({
       },
       {
         title: 'Pack Authoring',
-        commands: ['create', 'validate', 'pack', 'publish', 'unpublish'],
+        commands: ['create', 'validate', 'pack', 'publish', 'unpublish', 'export-area'],
       },
       {
         title: 'Trusted Publishing',
@@ -354,6 +355,21 @@ program
   .action(async () => {
     try {
       await publish();
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('export-area <areaRef>')
+  .description('Export a game-root authored area side-car into its pack (areaRef = namespace:area-id)')
+  .option('--pack <dir>', 'Target pack directory (auto-detected from linked packs by default)')
+  .option('--game-root <path>', 'Game root containing data/ (default: current dir)')
+  .option('--force', 'Overwrite pack files that diverge from the side-car')
+  .action((areaRef, opts) => {
+    try {
+      exportArea(areaRef, { cwd: process.cwd(), gameRoot: opts.gameRoot, pack: opts.pack, force: opts.force });
     } catch (e) {
       console.error(`error: ${e.message}`);
       process.exit(1);

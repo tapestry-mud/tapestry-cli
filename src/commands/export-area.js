@@ -1,0 +1,94 @@
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const { readYaml, writeYaml } = require('../util/yaml');
+const { readLinks } = require('../lib/links');
+
+// "@legends/forgotten" -> "legends-forgotten" (mirrors engine PackLoader.PackNamespace)
+function packNamespace(name) {
+  if (name.indexOf('/') === -1) {
+    return name;
+  }
+  return name.replace(/^@/, '').split('/').join('-');
+}
+
+function detectPackDir(cwd, namespace, explicitPack) {
+  if (explicitPack) {
+    return path.isAbsolute(explicitPack) ? explicitPack : path.join(cwd, explicitPack);
+  }
+  const { links } = readLinks(cwd);
+  const matches = [];
+  for (const [name, dir] of Object.entries(links)) {
+    let derivedNs = namespace;
+    try {
+      const manifest = readYaml(path.join(dir, 'pack.yaml')) || {};
+      derivedNs = packNamespace(manifest.name || name);
+    } catch (e) {
+      derivedNs = packNamespace(name);
+    }
+    if (derivedNs === namespace) {
+      matches.push(dir);
+    }
+  }
+  if (matches.length === 1) {
+    return matches[0];
+  }
+  if (matches.length === 0) {
+    throw new Error(`Could not auto-detect a pack for namespace '${namespace}'. Pass --pack <dir>.`);
+  }
+  throw new Error(`Multiple linked packs match namespace '${namespace}'. Pass --pack <dir>.`);
+}
+
+function exportArea(areaRef, options) {
+  options = options || {};
+  const cwd = options.cwd || process.cwd();
+  const gameRoot = options.gameRoot || cwd;
+  const force = !!options.force;
+
+  const colon = areaRef.indexOf(':');
+  if (colon < 1) {
+    throw new Error('Usage: export-area <namespace:area-id> [--pack <dir>]');
+  }
+  const namespace = areaRef.slice(0, colon);
+  const area = areaRef.slice(colon + 1);
+
+  const sideCarRooms = path.join(gameRoot, 'data', 'areas', area, 'rooms');
+  if (!fs.existsSync(sideCarRooms)) {
+    throw new Error(`No authored rooms found for area '${area}' at ${sideCarRooms}`);
+  }
+  const files = fs.readdirSync(sideCarRooms).filter((f) => f.endsWith('.yaml'));
+  if (files.length === 0) {
+    throw new Error(`No authored rooms found for area '${area}'`);
+  }
+
+  const packDir = detectPackDir(cwd, namespace, options.pack);
+  const targetRooms = path.join(packDir, 'areas', area, 'rooms');
+  fs.mkdirSync(targetRooms, { recursive: true });
+
+  const areaYaml = path.join(packDir, 'areas', area, 'area.yaml');
+  if (!fs.existsSync(areaYaml)) {
+    writeYaml(areaYaml, { id: area, name: area, description: `The ${area} area.` });
+  }
+
+  let written = 0;
+  for (const file of files) {
+    const src = path.join(sideCarRooms, file);
+    const dest = path.join(targetRooms, file);
+    const incoming = readYaml(src);
+    if (fs.existsSync(dest) && !force) {
+      const existing = readYaml(dest);
+      if (JSON.stringify(existing) !== JSON.stringify(incoming)) {
+        throw new Error(
+          `Pack file ${dest} diverges from the side-car. Review the diff and re-run with --force to overwrite.`);
+      }
+    }
+    writeYaml(dest, incoming);
+    written++;
+  }
+
+  console.log(`Exported ${written} room(s) for area '${area}' into ${targetRooms}`);
+  console.log('Review the git diff, bump pack.yaml (tip commit!), then commit + push.');
+}
+
+module.exports = { exportArea, packNamespace, detectPackDir };
