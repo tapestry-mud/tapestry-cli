@@ -136,3 +136,16 @@ describe('manifest glob reconcile', () => {
     expect(m.content.rooms).toBe('areas/**/rooms/*.yaml');
   });
 });
+
+describe('namespace guard', () => {
+  it('refuses to sync into a pack whose namespace differs from the area ref', () => {
+    seedSideCar();
+    // Linked pack is @legends/forgotten (ns: legends-forgotten), but we target a different ns.
+    const packDir = path.join(tmp, 'other-pack');
+    fs.mkdirSync(packDir, { recursive: true });
+    writeYaml(path.join(packDir, 'pack.yaml'), { name: '@someone/elsewhere', version: '0.1.0' });
+    expect(() =>
+      syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, pack: packDir, keepSidecars: true })
+    ).toThrow(/namespace .* does not match/i);
+  });
+});

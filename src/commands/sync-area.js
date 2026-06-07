@@ -64,6 +64,16 @@ function syncArea(areaRef, options) {
   }
 
   const packDir = detectPackDir(cwd, namespace, options.pack);
+
+  const destManifest = readYaml(path.join(packDir, 'pack.yaml')) || {};
+  const destNamespace = packNamespace(destManifest.name || '');
+  if (destNamespace !== namespace) {
+    throw new Error(
+      `Pack namespace '${destNamespace}' does not match area namespace '${namespace}'. ` +
+      'sync-area only commits an area back into its own pack; use link (or a future migrate) for cross-pack moves.'
+    );
+  }
+
   const targetRooms = path.join(packDir, 'areas', area, 'rooms');
   fs.mkdirSync(targetRooms, { recursive: true });
 
