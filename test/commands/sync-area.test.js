@@ -125,3 +125,14 @@ describe('area.yaml handling', () => {
     expect(readYaml(path.join(packDir, 'areas', 'lf-hollow', 'area.yaml'))).toEqual(fresh);
   });
 });
+
+describe('manifest glob reconcile', () => {
+  it('wires both content globs into a glob-less pack manifest', () => {
+    seedSideCar();
+    const packDir = seedLinkedPack(); // pack.yaml has no content block
+    syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, keepSidecars: true });
+    const m = readYaml(path.join(packDir, 'pack.yaml'));
+    expect(m.content.area_definitions).toBe('areas/**/area.yaml');
+    expect(m.content.rooms).toBe('areas/**/rooms/*.yaml');
+  });
+});

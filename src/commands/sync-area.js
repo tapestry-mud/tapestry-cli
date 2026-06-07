@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { readYaml, writeYaml } = require('../util/yaml');
 const { readLinks } = require('../lib/links');
+const { ensureContentGlobs } = require('../lib/pack-manifest');
 
 // "@legends/forgotten" -> "legends-forgotten" (mirrors engine PackLoader.PackNamespace)
 function packNamespace(name) {
@@ -93,6 +94,8 @@ function syncArea(areaRef, options) {
     writeYaml(dest, incoming);
     written++;
   }
+
+  ensureContentGlobs(packDir);
 
   console.log(`Synced ${written} room(s) for area '${area}' into ${targetRooms}`);
 }
