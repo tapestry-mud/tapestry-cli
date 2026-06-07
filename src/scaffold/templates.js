@@ -39,7 +39,7 @@ tags: "tags.yml"
 
 # Glob patterns -- the engine uses these to find your content
 content:
-  areas: "areas/**/area.yaml"
+  area_definitions: "areas/**/area.yaml"
   rooms: "areas/**/rooms/*.yaml"
   items: "areas/**/items/*.yaml"
   mobs: "areas/**/mobs/*.yaml"

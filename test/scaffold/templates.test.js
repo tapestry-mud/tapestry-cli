@@ -45,3 +45,15 @@ test('every file has non-empty content', () => {
     expect(file.content.length).toBeGreaterThan(0);
   }
 });
+
+const yaml = require('js-yaml');
+
+describe('scaffold pack.yaml content globs', () => {
+  it('declares area_definitions (the key the engine reads), not areas', () => {
+    const files = generatePackFiles({ scopedName: '@x/y', shortName: 'y' });
+    const pkg = files.find((f) => f.path === 'pack.yaml');
+    const manifest = yaml.load(pkg.content);
+    expect(manifest.content.area_definitions).toBe('areas/**/area.yaml');
+    expect(manifest.content.areas).toBeUndefined();
+  });
+});
