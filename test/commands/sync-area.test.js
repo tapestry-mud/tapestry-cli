@@ -189,3 +189,31 @@ describe('version bump + commit', () => {
     warn.mockRestore();
   });
 });
+
+describe('move vs keep-sidecars', () => {
+  const sideRoom = () => path.join(tmp, 'data', 'areas', 'lf-hollow', 'rooms', 'lf-hollow-anchor.yaml');
+  const areaDir = () => path.join(tmp, 'data', 'areas', 'lf-hollow');
+
+  it('removes the side-cars (and empty area dir) by default after a successful commit', () => {
+    seedSideCar();
+    seedLinkedPack();
+    syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp });
+    expect(fs.existsSync(sideRoom())).toBe(false);
+    expect(fs.existsSync(areaDir())).toBe(false);
+  });
+
+  it('keeps the side-cars when --keep-sidecars is set', () => {
+    seedSideCar();
+    seedLinkedPack();
+    syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, keepSidecars: true });
+    expect(fs.existsSync(sideRoom())).toBe(true);
+  });
+
+  it('preserves the side-cars when the commit fails', () => {
+    commitAll.mockImplementation(() => { throw new Error('hook failed'); });
+    seedSideCar();
+    seedLinkedPack();
+    expect(() => syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp })).toThrow(/hook failed/);
+    expect(fs.existsSync(sideRoom())).toBe(true);
+  });
+});

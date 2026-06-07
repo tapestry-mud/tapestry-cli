@@ -48,6 +48,7 @@ function syncArea(areaRef, options) {
   const gameRoot = options.gameRoot || cwd;
   const force = !!options.force;
   const bumpLevel = options.bump || 'patch';
+  const keepSidecars = !!options.keepSidecars;
 
   const colon = areaRef.indexOf(':');
   if (colon < 1) {
@@ -123,6 +124,23 @@ function syncArea(areaRef, options) {
     committed = true;
   } else {
     console.warn(`warn: ${packDir} is not a git repo; bumped to ${next} but did not commit.`);
+  }
+
+  if (!keepSidecars) {
+    const areaSideCarDir = path.join(gameRoot, 'data', 'areas', area);
+    for (const file of files) {
+      fs.rmSync(path.join(sideCarRooms, file));
+    }
+    if (fs.existsSync(sideCarRooms) && fs.readdirSync(sideCarRooms).length === 0) {
+      fs.rmdirSync(sideCarRooms);
+    }
+    const sideCarAreaYamlToDelete = path.join(areaSideCarDir, 'area.yaml');
+    if (fs.existsSync(sideCarAreaYamlToDelete)) {
+      fs.rmSync(sideCarAreaYamlToDelete);
+    }
+    if (fs.existsSync(areaSideCarDir) && fs.readdirSync(areaSideCarDir).length === 0) {
+      fs.rmdirSync(areaSideCarDir);
+    }
   }
 
   console.log(`Synced ${written} room(s) for area '${area}' into ${packDir} (v${old} -> v${next}).`);
