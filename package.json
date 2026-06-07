@@ -1,6 +1,6 @@
 {
   "name": "@tapestry-mud/cli",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "CLI for the Tapestry MUD engine",
   "repository": {
     "type": "git",
