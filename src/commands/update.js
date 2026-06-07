@@ -53,7 +53,14 @@ async function update(packageArg, { cwd = process.cwd(), registryUrl = DEFAULT_R
 
     const destDir = packInstallPath(cwd, packageName);
     if (fs.existsSync(destDir)) {
-      fs.rmSync(destDir, { recursive: true });
+      try {
+        fs.rmSync(destDir, { recursive: true });
+      } catch (e) {
+        throw new Error(
+          `could not replace ${packageName} at ${destDir}: ${e.message}. ` +
+          `The user running tapestry may not own the packs directory.`
+        );
+      }
     }
 
     const safeId = packageName.replace('@', '').replace('/', '-');

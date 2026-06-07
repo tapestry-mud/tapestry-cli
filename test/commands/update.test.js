@@ -114,4 +114,31 @@ describe('update', () => {
       '@tapestry/missing is not in tapestry.yaml'
     );
   });
+
+  it('fails loudly with an actionable message when the pack dir cannot be replaced', async () => {
+    setupProject(tmpDir, { '@tapestry/core': '^1.0.0' }, { '@tapestry/core': '1.0.0' });
+    fetchPackageMetadata.mockResolvedValue(makeRegistryMeta('@tapestry/core', '1.1.0'));
+    fetchTarball.mockResolvedValue(Buffer.from('new'));
+
+    const eacces = Object.assign(
+      new Error("EACCES: permission denied, rmdir '/opt/tapestry/x/packs/@tapestry/core/areas'"),
+      { code: 'EACCES' }
+    );
+    const rmSpy = jest.spyOn(fs, 'rmSync').mockImplementation((target) => {
+      if (String(target).includes(path.join('packs', '@tapestry'))) {
+        throw eacces;
+      }
+    });
+
+    try {
+      const promise = update(undefined, { cwd: tmpDir });
+      await expect(promise).rejects.toThrow(/could not replace @tapestry\/core/i);
+      await expect(promise).rejects.toThrow(/permission denied/i);
+      // A failed replacement must NOT record success in the lock file.
+      const lock = readLock(tmpDir);
+      expect(lock.resolved['@tapestry/core'].version).toBe('1.0.0');
+    } finally {
+      rmSpy.mockRestore();
+    }
+  });
 });
