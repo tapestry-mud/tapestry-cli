@@ -39,6 +39,9 @@ function bumpVersion(packDir, level = 'patch') {
     throw new Error(`pack.yaml has no valid semver version (found: ${old}). Cannot bump.`);
   }
   const next = semver.inc(old, level);
+  if (!next) {
+    throw new Error(`Invalid bump level '${level}'. Expected patch, minor, or major.`);
+  }
   manifest.version = next;
   writeYaml(manifestPath, manifest);
   return { old, new: next };

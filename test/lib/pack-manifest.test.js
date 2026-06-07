@@ -80,4 +80,14 @@ describe('bumpVersion', () => {
     seed('stable');
     expect(() => bumpVersion(tmp, 'patch')).toThrow(/valid semver/i);
   });
+
+  it('uses patch as the default level', () => {
+    seed('0.3.1');
+    expect(bumpVersion(tmp)).toEqual({ old: '0.3.1', new: '0.3.2' });
+  });
+
+  it('throws on an invalid level', () => {
+    seed('0.3.1');
+    expect(() => bumpVersion(tmp, 'garbage')).toThrow(/invalid bump level/i);
+  });
 });
