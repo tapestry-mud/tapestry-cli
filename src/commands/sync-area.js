@@ -40,7 +40,7 @@ function detectPackDir(cwd, namespace, explicitPack) {
   throw new Error(`Multiple linked packs match namespace '${namespace}'. Pass --pack <dir>.`);
 }
 
-function exportArea(areaRef, options) {
+function syncArea(areaRef, options) {
   options = options || {};
   const cwd = options.cwd || process.cwd();
   const gameRoot = options.gameRoot || cwd;
@@ -48,7 +48,7 @@ function exportArea(areaRef, options) {
 
   const colon = areaRef.indexOf(':');
   if (colon < 1) {
-    throw new Error('Usage: export-area <namespace:area-id> [--pack <dir>]');
+    throw new Error('Usage: sync-area <namespace:area-id> [--pack <dir>]');
   }
   const namespace = areaRef.slice(0, colon);
   const area = areaRef.slice(colon + 1);
@@ -87,8 +87,7 @@ function exportArea(areaRef, options) {
     written++;
   }
 
-  console.log(`Exported ${written} room(s) for area '${area}' into ${targetRooms}`);
-  console.log('Review the git diff, bump pack.yaml (tip commit!), then commit + push.');
+  console.log(`Synced ${written} room(s) for area '${area}' into ${targetRooms}`);
 }
 
-module.exports = { exportArea, packNamespace, detectPackDir };
+module.exports = { syncArea, exportArea: syncArea, packNamespace, detectPackDir };

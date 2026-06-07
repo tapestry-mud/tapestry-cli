@@ -30,7 +30,7 @@ const { unpublish } = require('../src/commands/unpublish');
 const { distTagSet, distTagList } = require('../src/commands/dist-tag');
 const { presetSet, presetDelete } = require('../src/commands/preset');
 const { trustAdd, trustList, trustRm } = require('../src/commands/trust');
-const { exportArea } = require('../src/commands/export-area');
+const { syncArea } = require('../src/commands/sync-area');
 
 const program = new Command();
 
@@ -60,7 +60,7 @@ program.configureHelp({
       },
       {
         title: 'Pack Authoring',
-        commands: ['create', 'validate', 'pack', 'publish', 'unpublish', 'export-area'],
+        commands: ['create', 'validate', 'pack', 'publish', 'unpublish', 'sync-area'],
       },
       {
         title: 'Trusted Publishing',
@@ -361,19 +361,45 @@ program
     }
   });
 
+function runSyncArea(areaRef, opts) {
+  try {
+    syncArea(areaRef, {
+      cwd: process.cwd(),
+      gameRoot: opts.gameRoot,
+      pack: opts.pack,
+      force: opts.force,
+      keepSidecars: opts.keepSidecars,
+      bump: opts.major ? 'major' : opts.minor ? 'minor' : 'patch',
+    });
+  } catch (e) {
+    console.error(`error: ${e.message}`);
+    process.exit(1);
+  }
+}
+
 program
-  .command('export-area <areaRef>')
-  .description('Export a game-root authored area side-car into its pack (areaRef = namespace:area-id)')
+  .command('sync-area <areaRef>')
+  .description('Commit a game-root authored area back into its pack (areaRef = namespace:area-id)')
   .option('--pack <dir>', 'Target pack directory (auto-detected from linked packs by default)')
   .option('--game-root <path>', 'Game root containing data/ (default: current dir)')
+  .option('--keep-sidecars', 'Copy instead of move (leave the game-root side-cars in place)')
   .option('--force', 'Overwrite pack files that diverge from the side-car')
+  .option('--minor', 'Bump the pack minor version (default: patch)')
+  .option('--major', 'Bump the pack major version (default: patch)')
+  .action(runSyncArea);
+
+program
+  .command('export-area <areaRef>', { hidden: true })
+  .description('(deprecated) alias for sync-area')
+  .option('--pack <dir>', 'Target pack directory (auto-detected from linked packs by default)')
+  .option('--game-root <path>', 'Game root containing data/ (default: current dir)')
+  .option('--keep-sidecars', 'Copy instead of move (leave the game-root side-cars in place)')
+  .option('--force', 'Overwrite pack files that diverge from the side-car')
+  .option('--minor', 'Bump the pack minor version (default: patch)')
+  .option('--major', 'Bump the pack major version (default: patch)')
   .action((areaRef, opts) => {
-    try {
-      exportArea(areaRef, { cwd: process.cwd(), gameRoot: opts.gameRoot, pack: opts.pack, force: opts.force });
-    } catch (e) {
-      console.error(`error: ${e.message}`);
-      process.exit(1);
-    }
+    console.warn('warning: `export-area` is deprecated; use `sync-area`.');
+    runSyncArea(areaRef, opts);
   });
 
 program

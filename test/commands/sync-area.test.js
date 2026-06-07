@@ -1,13 +1,20 @@
 'use strict';
 
+jest.mock('../../src/lib/git', () => ({ isRepo: jest.fn(() => true), commitAll: jest.fn() }));
+
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { writeYaml, readYaml } = require('../../src/util/yaml');
-const { exportArea } = require('../../src/commands/export-area');
+const { isRepo, commitAll } = require('../../src/lib/git');
+const { syncArea } = require('../../src/commands/sync-area');
 
 let tmp;
-beforeEach(() => { tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'export-area-')); });
+beforeEach(() => {
+  tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-area-'));
+  isRepo.mockReturnValue(true);
+  commitAll.mockReset();
+});
 afterEach(() => { fs.rmSync(tmp, { recursive: true, force: true }); });
 
 function seedSideCar() {
@@ -36,7 +43,7 @@ function seedLinkedPack() {
 it('exports side-car rooms into the auto-detected pack', () => {
   seedSideCar();
   const packDir = seedLinkedPack();
-  exportArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp });
+  syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, keepSidecars: true });
   const out = path.join(packDir, 'areas', 'lf-hollow', 'rooms', 'lf-hollow-anchor.yaml');
   expect(fs.existsSync(out)).toBe(true);
   expect(readYaml(out).id).toBe('legends-forgotten:lf-hollow-anchor');
@@ -45,13 +52,13 @@ it('exports side-car rooms into the auto-detected pack', () => {
 it('scaffolds area.yaml when absent', () => {
   seedSideCar();
   const packDir = seedLinkedPack();
-  exportArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp });
+  syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, keepSidecars: true });
   expect(fs.existsSync(path.join(packDir, 'areas', 'lf-hollow', 'area.yaml'))).toBe(true);
 });
 
 it('throws when no side-car area exists', () => {
   seedLinkedPack();
-  expect(() => exportArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp }))
+  expect(() => syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, keepSidecars: true }))
     .toThrow(/no authored rooms/i);
 });
 
@@ -61,8 +68,8 @@ it('refuses to clobber a diverging pack file without force', () => {
   const out = path.join(packDir, 'areas', 'lf-hollow', 'rooms', 'lf-hollow-anchor.yaml');
   fs.mkdirSync(path.dirname(out), { recursive: true });
   writeYaml(out, { id: 'legends-forgotten:lf-hollow-anchor', name: 'HAND EDITED', description: 'x' });
-  expect(() => exportArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp }))
+  expect(() => syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, keepSidecars: true }))
     .toThrow(/diverge|--force/i);
-  expect(() => exportArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, force: true }))
+  expect(() => syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, force: true, keepSidecars: true }))
     .not.toThrow();
 });
