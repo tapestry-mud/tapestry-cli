@@ -7,9 +7,7 @@ version: "0.1.0"
 type: "module"        # core | module | world
 display_name: "TODO: Human-readable name"
 description: "TODO: One-line description for registry search"
-author:
-  name: "TODO: Your Name"
-  handle: "TODO: your-registry-handle"
+author: "TODO: Your Name"
 license: "MIT"
 
 # Packs default to public. Add \`private: true\` to restrict access to your

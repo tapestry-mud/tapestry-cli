@@ -54,7 +54,7 @@ function writeManifest(cwd) {
     type: 'module',
     display_name: 'Test',
     description: 'A test',
-    author: { name: 'Tester', handle: 'mallek' },
+    author: 'Tester',
     license: 'MIT',
     engine: '>=3.0.0',
     validation: 'strict',

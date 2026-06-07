@@ -11,7 +11,7 @@ const validPackage = {
   type: 'module',
   display_name: 'My Pack',
   description: 'A test pack',
-  author: { name: 'Test Author', handle: 'author' },
+  author: 'Test Author',
   license: 'MIT',
   engine: '>=3.0.0',
   validation: 'strict',
@@ -40,6 +40,14 @@ test('rejects an invalid type', () => {
 
 test('rejects an invalid validation value', () => {
   const result = validatePackageManifest({ ...validPackage, validation: 'off' });
+  expect(result.success).toBe(false);
+});
+
+test('rejects an object author (engine PackManifest.Author is a string)', () => {
+  const result = validatePackageManifest({
+    ...validPackage,
+    author: { name: 'Test Author', handle: 'author' },
+  });
   expect(result.success).toBe(false);
 });
 

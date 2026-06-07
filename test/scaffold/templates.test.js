@@ -47,6 +47,7 @@ test('every file has non-empty content', () => {
 });
 
 const yaml = require('js-yaml');
+const { validatePackageManifest } = require('../../src/schema/manifest');
 
 describe('scaffold pack.yaml content globs', () => {
   it('declares area_definitions (the key the engine reads), not areas', () => {
@@ -55,5 +56,20 @@ describe('scaffold pack.yaml content globs', () => {
     const manifest = yaml.load(pkg.content);
     expect(manifest.content.area_definitions).toBe('areas/**/area.yaml');
     expect(manifest.content.areas).toBeUndefined();
+  });
+});
+
+describe('scaffold pack.yaml is schema-valid', () => {
+  it('passes the package manifest schema out of the box', () => {
+    const files = generatePackFiles({ scopedName: '@x/y', shortName: 'y' });
+    const pkg = files.find((f) => f.path === 'pack.yaml');
+    const result = validatePackageManifest(yaml.load(pkg.content));
+    expect(result.success).toBe(true);
+  });
+
+  it('scaffolds a string author (engine PackManifest.Author is a string)', () => {
+    const files = generatePackFiles({ scopedName: '@x/y', shortName: 'y' });
+    const manifest = yaml.load(files.find((f) => f.path === 'pack.yaml').content);
+    expect(typeof manifest.author).toBe('string');
   });
 });
