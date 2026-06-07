@@ -66,9 +66,16 @@ function syncArea(areaRef, options) {
   const targetRooms = path.join(packDir, 'areas', area, 'rooms');
   fs.mkdirSync(targetRooms, { recursive: true });
 
-  const areaYaml = path.join(packDir, 'areas', area, 'area.yaml');
-  if (!fs.existsSync(areaYaml)) {
-    writeYaml(areaYaml, { id: area, name: area, description: `The ${area} area.` });
+  const sideCarAreaYaml = path.join(gameRoot, 'data', 'areas', area, 'area.yaml');
+  const targetAreaYaml = path.join(packDir, 'areas', area, 'area.yaml');
+  if (fs.existsSync(sideCarAreaYaml)) {
+    // Authored area.yaml already carries the full `area:` envelope (Spec A) — copy it home.
+    writeYaml(targetAreaYaml, readYaml(sideCarAreaYaml));
+  } else if (!fs.existsSync(targetAreaYaml)) {
+    // No authored or pack area.yaml — synthesize a minimal valid envelope so it strict-boots.
+    writeYaml(targetAreaYaml, {
+      area: { id: area, name: area, level_range: [1, 99], reset_interval: 300 },
+    });
   }
 
   let written = 0;
