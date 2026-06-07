@@ -148,4 +148,13 @@ describe('namespace guard', () => {
       syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, pack: packDir, keepSidecars: true })
     ).toThrow(/namespace .* does not match/i);
   });
+
+  it('errors clearly when the target pack dir has no pack.yaml', () => {
+    seedSideCar();
+    const packDir = path.join(tmp, 'empty-pack');
+    fs.mkdirSync(packDir, { recursive: true });
+    expect(() =>
+      syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, pack: packDir, keepSidecars: true })
+    ).toThrow(/no pack\.yaml found/i);
+  });
 });

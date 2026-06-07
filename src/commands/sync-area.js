@@ -65,8 +65,15 @@ function syncArea(areaRef, options) {
 
   const packDir = detectPackDir(cwd, namespace, options.pack);
 
-  const destManifest = readYaml(path.join(packDir, 'pack.yaml')) || {};
-  const destNamespace = packNamespace(destManifest.name || '');
+  const destManifestPath = path.join(packDir, 'pack.yaml');
+  if (!fs.existsSync(destManifestPath)) {
+    throw new Error(`No pack.yaml found in ${packDir}. sync-area targets an existing pack; pass --pack <dir> pointing at one.`);
+  }
+  const destManifest = readYaml(destManifestPath) || {};
+  if (!destManifest.name) {
+    throw new Error(`pack.yaml in ${packDir} has no 'name' field.`);
+  }
+  const destNamespace = packNamespace(destManifest.name);
   if (destNamespace !== namespace) {
     throw new Error(
       `Pack namespace '${destNamespace}' does not match area namespace '${namespace}'. ` +
