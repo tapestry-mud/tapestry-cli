@@ -66,7 +66,7 @@ function dockerEnsureImage(image, version) {
   }
 }
 
-function dockerStart(projectName, image, version, packsDir, serverYamlPath, dataDir, network, linkMounts = []) {
+function dockerStart(projectName, image, version, packsDir, serverYamlPath, dataDir, network, linkMounts = [], envFile = null) {
   const containerName = `tapestry-${projectName}`;
   dockerEnsureImage(image, version);
   spawnSync('docker', ['rm', '-f', containerName], { stdio: 'ignore' });
@@ -80,6 +80,9 @@ function dockerStart(projectName, image, version, packsDir, serverYamlPath, data
     '-v', `${dataDir}:/app/data`,
     ...linkMounts,
   ];
+  if (envFile) {
+    args.push('--env-file', envFile);
+  }
   if (network) {
     args.push('--network', network);
   }
@@ -268,6 +271,7 @@ function readEngineConfig(cwd) {
     mode: engine.mode,
     image: engine.image || DEFAULT_IMAGE,
     network: engine.network || null,
+    envFile: engine.env_file || null,
     installDir: path.join(cwd, '.tapestry-engine'),
     projectName: (manifest.name || 'tapestry').toLowerCase().replace(/[^a-z0-9-]+/g, '-'),
   };
@@ -324,7 +328,17 @@ async function startEngine(cwd) {
   fs.mkdirSync(dataDir, { recursive: true });
   if (config.mode === 'docker') {
     const tag = await resolveDockerTag(config);
-    dockerStart(config.projectName, config.image, tag, packsDir, serverYamlPath, dataDir, config.network, dockerLinkMounts(cwd));
+    let envFile = null;
+    if (config.envFile) {
+      envFile = path.resolve(cwd, config.envFile);
+      if (!fs.existsSync(envFile)) {
+        throw new Error(
+          `engine.env_file '${config.envFile}' not found at ${envFile}. ` +
+          'The file must exist on the host running tapestry start.'
+        );
+      }
+    }
+    dockerStart(config.projectName, config.image, tag, packsDir, serverYamlPath, dataDir, config.network, dockerLinkMounts(cwd), envFile);
   } else if (config.mode === 'binary') {
     materializeLinks(cwd);
     binaryStart(config.version, config.installDir, packsDir, serverYamlPath, cwd);

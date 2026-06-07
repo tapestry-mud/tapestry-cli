@@ -52,6 +52,8 @@ const ProjectManifestSchema = z.object({
       version: z.string().min(1),
       mode: z.enum(['docker', 'binary', 'source']),
       image: z.string().optional(),
+      network: z.string().optional(),
+      env_file: z.string().optional(),
     }),
   ]),
   dependencies: z.record(z.string()).optional(),

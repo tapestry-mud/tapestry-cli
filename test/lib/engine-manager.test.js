@@ -311,6 +311,48 @@ describe('docker mode', () => {
       expect(runCall[1]).not.toContain('--network');
     });
 
+    it('passes --env-file with the resolved path when engine.env_file is set', async () => {
+      const envPath = path.join(tmpDir, 'secrets.env');
+      fs.writeFileSync(envPath, 'TAPESTRY_LLM_API_KEY=sk-test\n');
+      writeYaml(path.join(tmpDir, 'tapestry.yaml'), {
+        name: 'my-game',
+        engine: { version: '3.1.0', mode: 'docker', env_file: 'secrets.env' },
+      });
+      await startEngine(tmpDir);
+      const runCall = spawnSync.mock.calls.find(c => c[1] && c[1].includes('run'));
+      const args = runCall[1];
+      const idx = args.indexOf('--env-file');
+      expect(idx).toBeGreaterThan(-1);
+      expect(args[idx + 1]).toBe(envPath);
+    });
+
+    it('resolves an absolute env_file path as-is (droplet host path)', async () => {
+      const envPath = path.join(tmpDir, 'host.env');
+      fs.writeFileSync(envPath, 'TAPESTRY_LLM_API_KEY=sk-test\n');
+      writeYaml(path.join(tmpDir, 'tapestry.yaml'), {
+        name: 'my-game',
+        engine: { version: '3.1.0', mode: 'docker', env_file: envPath },
+      });
+      await startEngine(tmpDir);
+      const runCall = spawnSync.mock.calls.find(c => c[1] && c[1].includes('run'));
+      const args = runCall[1];
+      expect(args[args.indexOf('--env-file') + 1]).toBe(envPath);
+    });
+
+    it('omits --env-file when engine.env_file is not set', async () => {
+      await startEngine(tmpDir);
+      const runCall = spawnSync.mock.calls.find(c => c[1] && c[1].includes('run'));
+      expect(runCall[1]).not.toContain('--env-file');
+    });
+
+    it('throws a clear error when engine.env_file points to a missing file', async () => {
+      writeYaml(path.join(tmpDir, 'tapestry.yaml'), {
+        name: 'my-game',
+        engine: { version: '3.1.0', mode: 'docker', env_file: 'nope.env' },
+      });
+      await expect(startEngine(tmpDir)).rejects.toThrow("engine.env_file 'nope.env' not found");
+    });
+
     it('adds a -v bind mount for each linked pack at the scoped container path', async () => {
       const { addLink } = require('../../src/lib/links');
       const linkTarget = path.join(tmpDir, 'lf-src');
