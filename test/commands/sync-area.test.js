@@ -111,4 +111,17 @@ describe('area.yaml handling', () => {
     syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, keepSidecars: true });
     expect(readYaml(path.join(packDir, 'areas', 'lf-hollow', 'area.yaml'))).toEqual(existing);
   });
+
+  it('overwrites a stale pack area.yaml when the side-car area.yaml is present', () => {
+    seedSideCar();
+    const packDir = seedLinkedPack();
+    // Pre-existing stale pack area.yaml...
+    fs.mkdirSync(path.join(packDir, 'areas', 'lf-hollow'), { recursive: true });
+    writeYaml(path.join(packDir, 'areas', 'lf-hollow', 'area.yaml'), { area: { id: 'lf-hollow', name: 'STALE', reset_interval: 1 } });
+    // ...and a fresh authored side-car area.yaml that should win.
+    const fresh = { area: { id: 'lf-hollow', name: 'Fresh Hollow', theme: 'bright', reset_interval: 600 } };
+    seedSideCarAreaYaml(fresh);
+    syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, keepSidecars: true });
+    expect(readYaml(path.join(packDir, 'areas', 'lf-hollow', 'area.yaml'))).toEqual(fresh);
+  });
 });
