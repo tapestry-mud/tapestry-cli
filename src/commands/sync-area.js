@@ -126,6 +126,9 @@ function syncArea(areaRef, options) {
     console.warn(`warn: ${packDir} is not a git repo; bumped to ${next} but did not commit.`);
   }
 
+  // Move = delete the game-root side-cars now that the content is durably in the pack.
+  // Runs after the write/commit above. In the non-git fallback the content is written
+  // (not committed); deletion is still correct because the pack dir holds the files.
   if (!keepSidecars) {
     const areaSideCarDir = path.join(gameRoot, 'data', 'areas', area);
     for (const file of files) {

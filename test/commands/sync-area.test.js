@@ -216,4 +216,16 @@ describe('move vs keep-sidecars', () => {
     expect(() => syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp })).toThrow(/hook failed/);
     expect(fs.existsSync(sideRoom())).toBe(true);
   });
+
+  it('still moves (deletes side-cars) when the pack is not a git repo', () => {
+    isRepo.mockReturnValue(false);
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    seedSideCar();
+    const packDir = seedLinkedPack();
+    syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp });
+    expect(fs.existsSync(path.join(tmp, 'data', 'areas', 'lf-hollow', 'rooms', 'lf-hollow-anchor.yaml'))).toBe(false);
+    expect(fs.existsSync(path.join(packDir, 'areas', 'lf-hollow', 'rooms', 'lf-hollow-anchor.yaml'))).toBe(true);
+    expect(commitAll).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
 });
