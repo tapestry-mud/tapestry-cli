@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path');
+const semver = require('semver');
 const { readYaml, writeYaml } = require('../util/yaml');
 
 const CONTENT_GLOBS = {
@@ -29,4 +30,18 @@ function ensureContentGlobs(packDir, globs = CONTENT_GLOBS) {
   return added;
 }
 
-module.exports = { ensureContentGlobs, CONTENT_GLOBS };
+// Bump the pack version (patch|minor|major). Returns { old, new }.
+function bumpVersion(packDir, level = 'patch') {
+  const manifestPath = path.join(packDir, 'pack.yaml');
+  const manifest = readYaml(manifestPath) || {};
+  const old = manifest.version;
+  if (!old || !semver.valid(old)) {
+    throw new Error(`pack.yaml has no valid semver version (found: ${old}). Cannot bump.`);
+  }
+  const next = semver.inc(old, level);
+  manifest.version = next;
+  writeYaml(manifestPath, manifest);
+  return { old, new: next };
+}
+
+module.exports = { ensureContentGlobs, bumpVersion, CONTENT_GLOBS };

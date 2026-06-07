@@ -53,3 +53,31 @@ describe('ensureContentGlobs', () => {
     expect(m.tags).toBe('tags.yml');
   });
 });
+
+const { bumpVersion } = require('../../src/lib/pack-manifest');
+
+describe('bumpVersion', () => {
+  function seed(version) { writeYaml(path.join(tmp, 'pack.yaml'), { name: '@x/y', version }); }
+
+  it('bumps patch by default and returns { old, new }', () => {
+    seed('0.3.1');
+    const r = bumpVersion(tmp, 'patch');
+    expect(r).toEqual({ old: '0.3.1', new: '0.3.2' });
+    expect(readYaml(path.join(tmp, 'pack.yaml')).version).toBe('0.3.2');
+  });
+
+  it('bumps minor', () => {
+    seed('0.3.1');
+    expect(bumpVersion(tmp, 'minor')).toEqual({ old: '0.3.1', new: '0.4.0' });
+  });
+
+  it('bumps major', () => {
+    seed('0.3.1');
+    expect(bumpVersion(tmp, 'major')).toEqual({ old: '0.3.1', new: '1.0.0' });
+  });
+
+  it('throws on a non-semver version', () => {
+    seed('stable');
+    expect(() => bumpVersion(tmp, 'patch')).toThrow(/valid semver/i);
+  });
+});
