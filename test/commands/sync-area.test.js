@@ -158,3 +158,34 @@ describe('namespace guard', () => {
     ).toThrow(/no pack\.yaml found/i);
   });
 });
+
+describe('version bump + commit', () => {
+  it('bumps patch by default, commits in the pack dir, and does not push', () => {
+    seedSideCar();
+    const packDir = seedLinkedPack();
+    syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, keepSidecars: true });
+    expect(readYaml(path.join(packDir, 'pack.yaml')).version).toBe('0.1.1');
+    expect(commitAll).toHaveBeenCalledTimes(1);
+    expect(commitAll.mock.calls[0][0]).toBe(packDir);
+    expect(commitAll.mock.calls[0][1]).toMatch(/0\.1\.0 -> 0\.1\.1/);
+  });
+
+  it('honors --minor / bump option', () => {
+    seedSideCar();
+    const packDir = seedLinkedPack();
+    syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, keepSidecars: true, bump: 'minor' });
+    expect(readYaml(path.join(packDir, 'pack.yaml')).version).toBe('0.2.0');
+  });
+
+  it('bumps but skips commit and warns when the pack is not a git repo', () => {
+    isRepo.mockReturnValue(false);
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    seedSideCar();
+    const packDir = seedLinkedPack();
+    syncArea('legends-forgotten:lf-hollow', { gameRoot: tmp, cwd: tmp, keepSidecars: true });
+    expect(readYaml(path.join(packDir, 'pack.yaml')).version).toBe('0.1.1');
+    expect(commitAll).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(expect.stringMatching(/not a git repo/i));
+    warn.mockRestore();
+  });
+});

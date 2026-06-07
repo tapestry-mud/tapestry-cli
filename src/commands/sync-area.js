@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { readYaml, writeYaml } = require('../util/yaml');
 const { readLinks } = require('../lib/links');
-const { ensureContentGlobs } = require('../lib/pack-manifest');
+const { ensureContentGlobs, bumpVersion } = require('../lib/pack-manifest');
+const { isRepo, commitAll } = require('../lib/git');
 
 // "@legends/forgotten" -> "legends-forgotten" (mirrors engine PackLoader.PackNamespace)
 function packNamespace(name) {
@@ -46,6 +47,7 @@ function syncArea(areaRef, options) {
   const cwd = options.cwd || process.cwd();
   const gameRoot = options.gameRoot || cwd;
   const force = !!options.force;
+  const bumpLevel = options.bump || 'patch';
 
   const colon = areaRef.indexOf(':');
   if (colon < 1) {
@@ -114,7 +116,20 @@ function syncArea(areaRef, options) {
 
   ensureContentGlobs(packDir);
 
-  console.log(`Synced ${written} room(s) for area '${area}' into ${targetRooms}`);
+  const { old, new: next } = bumpVersion(packDir, bumpLevel);
+  let committed = false;
+  if (isRepo(packDir)) {
+    commitAll(packDir, `content(${area}): sync authored edits, bump ${old} -> ${next}`);
+    committed = true;
+  } else {
+    console.warn(`warn: ${packDir} is not a git repo; bumped to ${next} but did not commit.`);
+  }
+
+  console.log(`Synced ${written} room(s) for area '${area}' into ${packDir} (v${old} -> v${next}).`);
+  if (committed) {
+    console.log('To publish + deploy, push the pack repo:');
+    console.log(`  cd ${packDir} && git push`);
+  }
 }
 
 module.exports = { syncArea, exportArea: syncArea, packNamespace, detectPackDir };
