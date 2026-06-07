@@ -33,6 +33,18 @@ describe('ensureContentGlobs', () => {
     expect(m.content.area_definitions).toBe('custom/area.yaml');
   });
 
+  it('adds only missing globs when rooms is already present', () => {
+    writeManifest({
+      name: '@x/y', version: '0.1.0',
+      content: { rooms: 'custom/rooms/*.yaml' },
+    });
+    const added = ensureContentGlobs(tmp);
+    expect(added).toEqual(['area_definitions']);
+    const m = readYaml(path.join(tmp, 'pack.yaml'));
+    expect(m.content.rooms).toBe('custom/rooms/*.yaml');
+    expect(m.content.area_definitions).toBe('areas/**/area.yaml');
+  });
+
   it('preserves unrelated manifest keys', () => {
     writeManifest({ name: '@x/y', version: '0.1.0', type: 'world', tags: 'tags.yml' });
     ensureContentGlobs(tmp);

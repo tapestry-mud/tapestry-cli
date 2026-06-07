@@ -18,7 +18,7 @@ function ensureContentGlobs(packDir, globs = CONTENT_GLOBS) {
   }
   const added = [];
   for (const [key, value] of Object.entries(globs)) {
-    if (!manifest.content[key]) {
+    if (!(key in manifest.content)) {
       manifest.content[key] = value;
       added.push(key);
     }
