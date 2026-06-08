@@ -31,6 +31,8 @@ const { distTagSet, distTagList } = require('../src/commands/dist-tag');
 const { presetSet, presetDelete } = require('../src/commands/preset');
 const { trustAdd, trustList, trustRm } = require('../src/commands/trust');
 const { syncArea } = require('../src/commands/sync-area');
+const { harvest } = require('../src/commands/harvest');
+const { status } = require('../src/commands/status');
 
 const program = new Command();
 
@@ -60,7 +62,7 @@ program.configureHelp({
       },
       {
         title: 'Pack Authoring',
-        commands: ['create', 'validate', 'pack', 'publish', 'unpublish', 'sync-area'],
+        commands: ['create', 'validate', 'pack', 'publish', 'unpublish', 'harvest', 'status'],
       },
       {
         title: 'Trusted Publishing',
@@ -361,12 +363,28 @@ program
     }
   });
 
-function runSyncArea(areaRef, opts) {
+program
+  .command('status')
+  .description('Show world state per area (Clean / Edited / Fork / WIP)')
+  .option('--game-root <path>', 'Game root containing data/ (default: current dir)')
+  .action((opts) => {
+    try {
+      status({ cwd: process.cwd(), gameRoot: opts.gameRoot });
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+async function runHarvest(areaRef, opts) {
   try {
-    syncArea(areaRef, {
+    await harvest(areaRef, {
       cwd: process.cwd(),
       gameRoot: opts.gameRoot,
       pack: opts.pack,
+      sink: opts.sink,
+      out: opts.out,
+      name: opts.name,
       force: opts.force,
       keepSidecars: opts.keepSidecars,
       bump: opts.major ? 'major' : opts.minor ? 'minor' : 'patch',
@@ -378,19 +396,23 @@ function runSyncArea(areaRef, opts) {
 }
 
 program
-  .command('sync-area <areaRef>')
-  .description('Commit a game-root authored area back into its pack (areaRef = namespace:area-id)')
+  .command('harvest <areaRef>')
+  .description('Harvest an authored area into a portable pack (areaRef = namespace:area-id)')
+  .option('--sink <sink>', 'Output sink: file | git (auto-detected by default)')
+  .option('--out <path>', '(file sink) where the .tgz lands')
+  .option('--name <name>', '(file sink) override the synthesized pack name (@scope/pack)')
   .option('--pack <dir>', 'Target pack directory (auto-detected from linked packs by default)')
   .option('--game-root <path>', 'Game root containing data/ (default: current dir)')
   .option('--keep-sidecars', 'Copy instead of move (leave the game-root side-cars in place)')
   .option('--force', 'Overwrite pack files that diverge from the side-car')
-  .option('--minor', 'Bump the pack minor version (default: patch)')
-  .option('--major', 'Bump the pack major version (default: patch)')
-  .action(runSyncArea);
+  .option('--minor', 'Bump the pack minor version (git sink only; default: patch)')
+  .option('--major', 'Bump the pack major version (git sink only; default: patch)')
+  .action(runHarvest);
 
+// Deprecated: sync-area is now harvest --sink git.
 program
-  .command('export-area <areaRef>', { hidden: true })
-  .description('(deprecated) alias for sync-area')
+  .command('sync-area <areaRef>')
+  .description('(deprecated) alias for harvest --sink git')
   .option('--pack <dir>', 'Target pack directory (auto-detected from linked packs by default)')
   .option('--game-root <path>', 'Game root containing data/ (default: current dir)')
   .option('--keep-sidecars', 'Copy instead of move (leave the game-root side-cars in place)')
@@ -398,8 +420,22 @@ program
   .option('--minor', 'Bump the pack minor version (default: patch)')
   .option('--major', 'Bump the pack major version (default: patch)')
   .action((areaRef, opts) => {
-    console.warn('warning: `export-area` is deprecated; use `sync-area`.');
-    runSyncArea(areaRef, opts);
+    console.warn('warning: `sync-area` is deprecated; use `harvest <area>` (auto-detects the git sink for an owned repo).');
+    runHarvest(areaRef, Object.assign({ sink: 'git' }, opts));
+  });
+
+program
+  .command('export-area <areaRef>', { hidden: true })
+  .description('(deprecated) alias for harvest --sink git')
+  .option('--pack <dir>', 'Target pack directory (auto-detected from linked packs by default)')
+  .option('--game-root <path>', 'Game root containing data/ (default: current dir)')
+  .option('--keep-sidecars', 'Copy instead of move (leave the game-root side-cars in place)')
+  .option('--force', 'Overwrite pack files that diverge from the side-car')
+  .option('--minor', 'Bump the pack minor version (default: patch)')
+  .option('--major', 'Bump the pack major version (default: patch)')
+  .action((areaRef, opts) => {
+    console.warn('warning: `export-area` is deprecated; use `harvest <area> --sink git`.');
+    runHarvest(areaRef, Object.assign({ sink: 'git' }, opts));
   });
 
 program
