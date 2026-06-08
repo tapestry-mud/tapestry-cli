@@ -91,3 +91,33 @@ describe('bumpVersion', () => {
     expect(() => bumpVersion(tmp, 'garbage')).toThrow(/invalid bump level/i);
   });
 });
+
+const { namespaceToName, synthesizeManifest } = require('../../src/lib/pack-manifest');
+const { validatePackageManifest } = require('../../src/schema/manifest');
+
+describe('namespaceToName', () => {
+  it('splits on the first hyphen into @scope/package', () => {
+    expect(namespaceToName('legends-forgotten')).toBe('@legends/forgotten');
+    expect(namespaceToName('mallek-legends-forgotten')).toBe('@mallek/legends-forgotten');
+  });
+  it('throws on a namespace with no hyphen', () => {
+    expect(() => namespaceToName('core')).toThrow(/--name/i);
+  });
+});
+
+describe('synthesizeManifest', () => {
+  it('produces a schema-valid world manifest with the documented defaults', () => {
+    const m = synthesizeManifest('legends-forgotten');
+    expect(m.name).toBe('@legends/forgotten');
+    expect(m.version).toBe('0.1.0');
+    expect(m.type).toBe('world');
+    expect(m.validation).toBe('strict');
+    expect(m.author).toBe('legends');
+    // Required-by-schema fields are all present (content globs are added later by renderArea).
+    expect(validatePackageManifest({ ...m, content: { area_definitions: 'areas/**/area.yaml' } }).success).toBe(true);
+  });
+  it('honors an explicit name override', () => {
+    const m = synthesizeManifest('core', { name: '@mallek/core-fork' });
+    expect(m.name).toBe('@mallek/core-fork');
+  });
+});

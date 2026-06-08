@@ -30,6 +30,43 @@ function ensureContentGlobs(packDir, globs = CONTENT_GLOBS) {
   return added;
 }
 
+// Reverse of PackNamespace: split the namespace on its FIRST hyphen -> @scope/package.
+function namespaceToName(namespace) {
+  const dash = namespace.indexOf('-');
+  if (dash < 1 || dash === namespace.length - 1) {
+    throw new Error(
+      `Cannot derive a pack name from namespace '${namespace}'. Pass --name <@scope/pack>.`);
+  }
+  const scope = namespace.slice(0, dash);
+  const pkg = namespace.slice(dash + 1);
+  return `@${scope}/${pkg}`;
+}
+
+function titleCase(s) {
+  return s.split(/[-_]/).filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+// Synthesize a strict-bootable world manifest for the no-pack hobbyist (exemplar B).
+// Content globs are added by renderArea's ensureContentGlobs after content lands.
+function synthesizeManifest(namespace, { name } = {}) {
+  const packName = name || namespaceToName(namespace);
+  const scope = packName.replace(/^@/, '').split('/')[0];
+  const pkgPart = packName.split('/')[1] || namespace;
+  return {
+    name: packName,
+    version: '0.1.0',
+    type: 'world',
+    display_name: titleCase(pkgPart),
+    description: `Harvested world pack for ${namespace}.`,
+    author: scope,
+    license: 'MIT',
+    engine: '>=0.1.0',
+    validation: 'strict',
+  };
+}
+
 // Bump the pack version (patch|minor|major). Returns { old, new }.
 function bumpVersion(packDir, level = 'patch') {
   const manifestPath = path.join(packDir, 'pack.yaml');
@@ -47,4 +84,4 @@ function bumpVersion(packDir, level = 'patch') {
   return { old, new: next };
 }
 
-module.exports = { ensureContentGlobs, bumpVersion, CONTENT_GLOBS };
+module.exports = { ensureContentGlobs, bumpVersion, namespaceToName, synthesizeManifest, CONTENT_GLOBS };
