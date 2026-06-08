@@ -32,4 +32,4 @@ function computeIntegrity(filePath) {
   return `sha256-${hash}`;
 }
 
-module.exports = { buildTarball, computeIntegrity };
+module.exports = { buildTarball, computeIntegrity, EXCLUDE };
