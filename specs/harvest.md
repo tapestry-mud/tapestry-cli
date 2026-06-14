@@ -18,7 +18,7 @@ This capability covers two closely related concerns:
 The `sync-area` command is a deprecated alias for `harvest --sink git`. The `export-area`
 command is a hidden deprecated alias for the same.
 
-The area reference format is `namespace:area-id` (e.g. `legends-forgotten:village-green`).
+The area reference format is `namespace:area-id` (e.g. `example-pack:village-green`).
 (src/lib/pack-resolve.js:8-13)
 
 ## Behavior
