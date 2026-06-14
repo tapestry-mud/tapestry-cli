@@ -48,9 +48,11 @@ order file is `tapestry-boot.yaml`; links are tracked in `tapestry-links.yaml`.
   (deps_hash matches a SHA-256 of the sorted `name@range` dependency entries). If current,
   installs from the lock; otherwise resolves freshly via the registry.
   (src/commands/install.js:107-122) (src/lib/lock-file.js:10-13)
-- With a package argument (`@scope/name` or `@scope/name@range`), adds or updates the entry
-  in `tapestry.yaml` dependencies with the resolved version pinned at `^version`, then
-  installs. (src/commands/install.js:92-106)
+- With a package argument, adds or updates the entry in `tapestry.yaml` dependencies, then
+  resolves and installs. A bare `@scope/name` (no range) is resolved and the entry is pinned
+  at `^<resolvedVersion>`; an explicit `@scope/name@range` writes the supplied range as-is and
+  is not re-pinned to the resolved version. (src/commands/install.js:92-105)
+  (src/commands/install.js:101-103)
 - Skips a package entirely if it is already linked (local working copy takes precedence).
   (src/commands/install.js:37-41)
 - Skips a package if the installed version already matches the resolved version.
