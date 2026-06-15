@@ -1,3 +1,8 @@
+---
+capability: validate
+last-updated: 2026-06-13
+---
+
 # validate
 
 Capability spec for offline pack manifest validation.

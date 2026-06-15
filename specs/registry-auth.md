@@ -1,3 +1,8 @@
+---
+capability: registry-auth
+last-updated: 2026-06-13
+---
+
 # registry-auth
 
 Capability spec for user identity, session management, and OIDC trusted publishing.

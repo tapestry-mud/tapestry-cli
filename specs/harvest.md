@@ -1,3 +1,8 @@
+---
+capability: harvest
+last-updated: 2026-06-13
+---
+
 # harvest
 
 Capability spec for world-state classification and the authoring-to-pack pipeline.

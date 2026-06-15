@@ -10,7 +10,8 @@
     "tapestry": "./bin/tapestry.js"
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "spec-lint": "spec-lint specs/"
   },
   "publishConfig": {
     "access": "public"
@@ -26,6 +27,7 @@
     "zod": "3.22.4"
   },
   "devDependencies": {
+    "@tapestry-mud/spec-lint": "0.2.1",
     "jest": "29.7.0"
   }
 }

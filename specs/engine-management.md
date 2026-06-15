@@ -1,3 +1,8 @@
+---
+capability: engine-management
+last-updated: 2026-06-13
+---
+
 # engine-management
 
 Capability spec for acquiring, configuring, running, and stopping the Tapestry engine.

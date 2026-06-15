@@ -1,3 +1,8 @@
+---
+capability: pack-lifecycle
+last-updated: 2026-06-13
+---
+
 # pack-lifecycle
 
 Capability spec for project scaffolding, pack installation and removal, boot-order management,
