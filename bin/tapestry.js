@@ -33,6 +33,7 @@ const { trustAdd, trustList, trustRm } = require('../src/commands/trust');
 const { syncArea } = require('../src/commands/sync-area');
 const { harvest } = require('../src/commands/harvest');
 const { status } = require('../src/commands/status');
+const { types } = require('../src/commands/types');
 
 const program = new Command();
 
@@ -62,7 +63,7 @@ program.configureHelp({
       },
       {
         title: 'Pack Authoring',
-        commands: ['create', 'validate', 'pack', 'publish', 'unpublish', 'harvest', 'status'],
+        commands: ['create', 'validate', 'pack', 'publish', 'unpublish', 'harvest', 'status', 'types'],
       },
       {
         title: 'Trusted Publishing',
@@ -370,6 +371,18 @@ program
   .action((opts) => {
     try {
       status({ cwd: process.cwd(), gameRoot: opts.gameRoot });
+    } catch (e) {
+      console.error(`error: ${e.message}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('types')
+  .description('Write the @tapestry/engine type declarations into types/ for ESM pack authoring')
+  .action(() => {
+    try {
+      types({});
     } catch (e) {
       console.error(`error: ${e.message}`);
       process.exit(1);
