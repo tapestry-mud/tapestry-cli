@@ -12,11 +12,13 @@ const { PACK_MANIFEST } = require('../lib/manifest');
 const { requireAccess } = require('../lib/auth');
 const { DEFAULT_REGISTRY, throwIfError, exchangeOIDCForAccess } = require('../lib/registry-client');
 const { detectCI, fetchGitHubIdToken, AUDIENCE } = require('../lib/oidc');
+const { buildTypeScript } = require('../lib/ts-build');
 
 async function publish({ cwd = process.cwd(), registryUrl = DEFAULT_REGISTRY } = {}) {
   validate({ cwd });
 
   const manifest = readYaml(path.join(cwd, PACK_MANIFEST));
+  buildTypeScript(cwd, manifest);
 
   const scope = manifest.name.match(/^@([^/]+)\//)[1];
   const ciMode = detectCI();

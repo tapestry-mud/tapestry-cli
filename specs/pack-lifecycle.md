@@ -153,25 +153,31 @@ order file is `tapestry-boot.yaml`; links are tracked in `tapestry-links.yaml`.
 ### pack (build tarball)
 
 - Runs `validate` first; aborts on validation failure. (src/commands/pack.js:7)
+- For ESM packs (`scripts_format: esm`), compiles `scripts/**/*.ts` to `dist/scripts/**/*.js`
+  using the bundled `tsc` and the pack's `tsconfig.json`; legacy packs are a no-op.
+  (src/commands/pack.js:14) (src/lib/ts-build.js:8-20)
 - Builds a `.tgz` under a `package/` prefix in the current directory named
-  `<shortName>-<version>.tgz`. (src/commands/pack.js:14) (src/lib/tarball-builder.js:16-26)
+  `<shortName>-<version>.tgz`. (src/commands/pack.js:16) (src/lib/tarball-builder.js:16-26)
 - Excludes `.git`, `node_modules`, `.DS_Store`, and `.tgz` files from the archive.
   (src/lib/tarball-builder.js:7-12)
 - Prints the `sha256-<base64>` integrity hash of the output file.
-  (src/commands/pack.js:18) (src/lib/tarball-builder.js:29-33)
+  (src/commands/pack.js:22) (src/lib/tarball-builder.js:29-33)
 
 ### publish
 
-- Runs `validate` first; aborts on validation failure. (src/commands/publish.js:17)
+- Runs `validate` first; aborts on validation failure. (src/commands/publish.js:18)
+- For ESM packs (`scripts_format: esm`), compiles `scripts/**/*.ts` to `dist/scripts/**/*.js`
+  using the bundled `tsc` and the pack's `tsconfig.json` before any network or auth work;
+  legacy packs are a no-op. (src/commands/publish.js:21) (src/lib/ts-build.js:8-20)
 - In a GitHub Actions OIDC environment (both `ACTIONS_ID_TOKEN_REQUEST_URL` and
   `ACTIONS_ID_TOKEN_REQUEST_TOKEN` set), fetches a GitHub id-token and exchanges it for a
   scoped access token; also sets a `tag: stable` field on the form.
-  (src/commands/publish.js:23-29)
-- Otherwise, requires an existing authenticated session. (src/commands/publish.js:29)
+  (src/commands/publish.js:26-30)
+- Otherwise, requires an existing authenticated session. (src/commands/publish.js:31)
 - Builds the tarball to a temp file, computes integrity, POSTs a multipart form with the
   tarball and JSON metadata (manifest fields plus integrity) to `/v1/publish`.
-  (src/commands/publish.js:36-64)
-- Deletes the temp file in a `finally` block. (src/commands/publish.js:66-68)
+  (src/commands/publish.js:40-65)
+- Deletes the temp file in a `finally` block. (src/commands/publish.js:71-73)
 
 ### create pack (scaffold)
 
