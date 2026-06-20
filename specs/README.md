@@ -9,7 +9,7 @@ behave?" from the relevant file alone.
 
 | Capability | File | Last Updated |
 |------------|------|--------------|
-| pack-lifecycle | [pack-lifecycle.md](pack-lifecycle.md) | 2026-06-13 |
+| pack-lifecycle | [pack-lifecycle.md](pack-lifecycle.md) | 2026-06-20 |
 | validate | [validate.md](validate.md) | 2026-06-13 |
 | harvest | [harvest.md](harvest.md) | 2026-06-13 |
 | registry-auth | [registry-auth.md](registry-auth.md) | 2026-06-13 |

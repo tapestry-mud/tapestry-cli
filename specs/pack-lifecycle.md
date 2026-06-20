@@ -1,6 +1,6 @@
 ---
 capability: pack-lifecycle
-last-updated: 2026-06-13
+last-updated: 2026-06-20
 ---
 
 # pack-lifecycle
@@ -203,4 +203,4 @@ order file is `tapestry-boot.yaml`; links are tracked in `tapestry-links.yaml`.
 
 ## Change Log
 
-- None on record.
+- 2026-06-20 (0.10.0): `pack` and `publish` compile ESM packs (`scripts_format: esm`) via `tsc` before archiving; new `tapestry types` command vendors the engine `.d.ts`. See changes/2026-06-20-pack-esm-build.md.
