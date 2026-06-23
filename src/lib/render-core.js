@@ -93,6 +93,29 @@ function renderArea(targetDir, { gameRoot, area, force = false }) {
   const areaDestRoot = path.join(targetDir, 'areas', area);
   copyOracleSideCars(areaSrcRoot, areaDestRoot, force);
 
+  // Copy minted mob and item instance files (including their *-oracle-table.yaml).
+  for (const sub of ['mobs', 'items']) {
+    const srcDir = path.join(gameRoot, 'data', 'areas', area, sub);
+    if (fs.existsSync(srcDir)) {
+      const subFiles = fs.readdirSync(srcDir).filter((f) => f.endsWith('.yaml'));
+      const destDir = path.join(targetDir, 'areas', area, sub);
+      fs.mkdirSync(destDir, { recursive: true });
+      for (const file of subFiles) {
+        const src = path.join(srcDir, file);
+        const dest = path.join(destDir, file);
+        const incoming = readYaml(src);
+        if (fs.existsSync(dest) && !force) {
+          const existing = readYaml(dest);
+          if (JSON.stringify(existing) !== JSON.stringify(incoming)) {
+            throw new Error(
+              `Pack file ${dest} diverges from the side-car. Review the diff and re-run with --force to overwrite.`);
+          }
+        }
+        writeYaml(dest, incoming);
+      }
+    }
+  }
+
   ensureContentGlobs(targetDir);
   reconcileDependencies(targetDir, area);
 

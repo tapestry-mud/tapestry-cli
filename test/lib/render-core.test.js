@@ -85,3 +85,21 @@ it('carries oracle tables (places + per-kind) into the target pack', () => {
   expect(m.content.oracle_tables).toBe('areas/**/*-oracle-table.yaml');
   expect(m.content.places_oracle).toBe('areas/**/places-oracle.yaml');
 });
+
+it('carries minted mobs/ and items/ instances into the target pack', () => {
+  seedSideCar();
+  const areaDir = path.join(tmp, 'data', 'areas', 'lf-hollow');
+  fs.mkdirSync(path.join(areaDir, 'mobs'), { recursive: true });
+  fs.mkdirSync(path.join(areaDir, 'items'), { recursive: true });
+  writeYaml(path.join(areaDir, 'mobs', 'angry-cook.yaml'), { id: 'angry-cook', max_hp: 41 });
+  writeYaml(path.join(areaDir, 'items', 'copper-pot.yaml'), { id: 'copper-pot' });
+
+  const packDir = seedTargetPack();
+  renderArea(packDir, { gameRoot: tmp, area: 'lf-hollow' });
+
+  expect(fs.existsSync(path.join(packDir, 'areas', 'lf-hollow', 'mobs', 'angry-cook.yaml'))).toBe(true);
+  expect(fs.existsSync(path.join(packDir, 'areas', 'lf-hollow', 'items', 'copper-pot.yaml'))).toBe(true);
+  const m = readYaml(path.join(packDir, 'pack.yaml'));
+  expect(m.content.mobs).toBe('areas/**/mobs/*.yaml');
+  expect(m.content.items).toBe('areas/**/items/*.yaml');
+});

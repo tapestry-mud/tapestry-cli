@@ -133,12 +133,20 @@ current version. (src/lib/file-sink.js:19-21)
 - Without `--force`: throws if a room file in the target differs from the incoming side-car.
   (src/lib/render-core.js:41-45)
 - With `--force`: overwrites divergent room files silently. (src/lib/render-core.js:40-49)
-- After writing, calls `ensureContentGlobs` to additively add `area_definitions` and `rooms`
-  glob entries to `pack.yaml` if not already present. (src/lib/render-core.js:52)
-  (src/lib/pack-manifest.js:7-31)
+- After writing rooms, copies oracle side-car files: `places-oracle.yaml` at the area root and
+  any `*-oracle-table.yaml` files anywhere under the area tree (including inside `mobs/` and
+  `items/` subdirectories). The same divergence guard (throw without `--force`, overwrite with
+  `--force`) applies. (src/lib/render-core.js) (src/lib/pack-manifest.js)
+- After copying oracle side-cars, copies all `*.yaml` files from `mobs/` and `items/` under the
+  area side-car tree into the corresponding `areas/<area>/mobs/` and `areas/<area>/items/`
+  directories in the target pack, including any `*-oracle-table.yaml` files in those directories.
+  The same divergence guard applies. (src/lib/render-core.js)
+- After writing, calls `ensureContentGlobs` to additively add `area_definitions`, `rooms`,
+  `oracle_tables`, `places_oracle`, `mobs`, and `items` glob entries to `pack.yaml` if not
+  already present. (src/lib/render-core.js) (src/lib/pack-manifest.js)
 - `reconcileDependencies` is a deliberate no-op: rooms are self-contained; the seam is wired
   for a future slice that will scan for cross-pack references in mobs/items/quests.
-  (src/lib/render-core.js:63-65)
+  (src/lib/render-core.js)
 
 ### Side-car removal (default behavior)
 
@@ -156,4 +164,6 @@ empty. `area.yaml` in the game root is also deleted. (src/lib/render-core.js:69-
 
 ## Change Log
 
-- None on record.
+- 2026-06-23 (0.11.0): renderArea carries oracle table side-cars (places-oracle.yaml, *-oracle-table.yaml)
+  and mints mob/item instance files (mobs/*.yaml, items/*.yaml) into the target pack alongside
+  area.yaml and rooms/. CONTENT_GLOBS gains oracle_tables, places_oracle, mobs, items.

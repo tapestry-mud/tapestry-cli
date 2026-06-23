@@ -9,6 +9,8 @@ const CONTENT_GLOBS = {
   rooms: 'areas/**/rooms/*.yaml',
   oracle_tables: 'areas/**/*-oracle-table.yaml',
   places_oracle: 'areas/**/places-oracle.yaml',
+  mobs: 'areas/**/mobs/*.yaml',
+  items: 'areas/**/items/*.yaml',
 };
 
 // Additively ensure the pack manifest declares the given content globs.
