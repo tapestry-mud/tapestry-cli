@@ -67,3 +67,21 @@ it('removeSideCars deletes the area side-cars and prunes empty dirs', () => {
   removeSideCars(tmp, 'lf-hollow', ['lf-hollow-anchor.yaml']);
   expect(fs.existsSync(path.join(tmp, 'data', 'areas', 'lf-hollow'))).toBe(false);
 });
+
+it('carries oracle tables (places + per-kind) into the target pack', () => {
+  seedSideCar();
+  // seed an oracle table + places file alongside the rooms
+  const areaDir = path.join(tmp, 'data', 'areas', 'lf-hollow');
+  fs.mkdirSync(path.join(areaDir, 'mobs'), { recursive: true });
+  writeYaml(path.join(areaDir, 'places-oracle.yaml'), { oracle_table: { kind: 'places', entries: [] } });
+  writeYaml(path.join(areaDir, 'mobs', 'mob-oracle-table.yaml'), { oracle_table: { kind: 'mobs', entries: [] } });
+
+  const packDir = seedTargetPack();
+  renderArea(packDir, { gameRoot: tmp, area: 'lf-hollow' });
+
+  expect(fs.existsSync(path.join(packDir, 'areas', 'lf-hollow', 'places-oracle.yaml'))).toBe(true);
+  expect(fs.existsSync(path.join(packDir, 'areas', 'lf-hollow', 'mobs', 'mob-oracle-table.yaml'))).toBe(true);
+  const m = readYaml(path.join(packDir, 'pack.yaml'));
+  expect(m.content.oracle_tables).toBe('areas/**/*-oracle-table.yaml');
+  expect(m.content.places_oracle).toBe('areas/**/places-oracle.yaml');
+});

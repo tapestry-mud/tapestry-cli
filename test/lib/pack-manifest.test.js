@@ -13,19 +13,26 @@ afterEach(() => { fs.rmSync(tmp, { recursive: true, force: true }); });
 function writeManifest(data) { writeYaml(path.join(tmp, 'pack.yaml'), data); }
 
 describe('ensureContentGlobs', () => {
-  it('adds both globs when the content block is absent', () => {
+  it('adds all globs when the content block is absent', () => {
     writeManifest({ name: '@x/y', version: '0.1.0' });
     const added = ensureContentGlobs(tmp);
-    expect(added.sort()).toEqual(['area_definitions', 'rooms']);
+    expect(added.sort()).toEqual(['area_definitions', 'oracle_tables', 'places_oracle', 'rooms']);
     const m = readYaml(path.join(tmp, 'pack.yaml'));
     expect(m.content.area_definitions).toBe('areas/**/area.yaml');
     expect(m.content.rooms).toBe('areas/**/rooms/*.yaml');
+    expect(m.content.oracle_tables).toBe('areas/**/*-oracle-table.yaml');
+    expect(m.content.places_oracle).toBe('areas/**/places-oracle.yaml');
   });
 
   it('leaves an existing glob value untouched and reports nothing added', () => {
     writeManifest({
       name: '@x/y', version: '0.1.0',
-      content: { area_definitions: 'custom/area.yaml', rooms: 'areas/**/rooms/*.yaml' },
+      content: {
+        area_definitions: 'custom/area.yaml',
+        rooms: 'areas/**/rooms/*.yaml',
+        oracle_tables: 'areas/**/*-oracle-table.yaml',
+        places_oracle: 'areas/**/places-oracle.yaml',
+      },
     });
     const added = ensureContentGlobs(tmp);
     expect(added).toEqual([]);
@@ -39,10 +46,12 @@ describe('ensureContentGlobs', () => {
       content: { rooms: 'custom/rooms/*.yaml' },
     });
     const added = ensureContentGlobs(tmp);
-    expect(added).toEqual(['area_definitions']);
+    expect(added.sort()).toEqual(['area_definitions', 'oracle_tables', 'places_oracle']);
     const m = readYaml(path.join(tmp, 'pack.yaml'));
     expect(m.content.rooms).toBe('custom/rooms/*.yaml');
     expect(m.content.area_definitions).toBe('areas/**/area.yaml');
+    expect(m.content.oracle_tables).toBe('areas/**/*-oracle-table.yaml');
+    expect(m.content.places_oracle).toBe('areas/**/places-oracle.yaml');
   });
 
   it('preserves unrelated manifest keys', () => {

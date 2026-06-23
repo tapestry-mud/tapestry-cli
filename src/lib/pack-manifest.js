@@ -7,6 +7,8 @@ const { readYaml, writeYaml } = require('../util/yaml');
 const CONTENT_GLOBS = {
   area_definitions: 'areas/**/area.yaml',
   rooms: 'areas/**/rooms/*.yaml',
+  oracle_tables: 'areas/**/*-oracle-table.yaml',
+  places_oracle: 'areas/**/places-oracle.yaml',
 };
 
 // Additively ensure the pack manifest declares the given content globs.
