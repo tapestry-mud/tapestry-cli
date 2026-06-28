@@ -4,6 +4,7 @@ const { parseAreaRef, resolvePackDirOrNull } = require('../lib/pack-resolve');
 const { isRepo } = require('../lib/git');
 const { syncArea } = require('./sync-area');
 const { fileSink } = require('../lib/file-sink');
+const { registrySink } = require('../lib/registry-sink');
 
 // Umbrella harvest verb. Auto-detects the sink (owned linked pack that is a git repo -> git;
 // else file) unless --sink is explicit. The render core is shared by every sink.
@@ -23,14 +24,23 @@ async function harvest(areaRef, options = {}) {
     return syncArea(areaRef, options);
   }
   if (sink === 'file') {
-    // The file sink snapshots at the current version -- it ignores --minor/--major (git-sink only).
+    // The file sink snapshots at the current version -- it ignores --minor/--major.
     return fileSink(areaRef, {
       cwd, gameRoot, namespace, area,
       force: options.force, keepSidecars: options.keepSidecars,
       out: options.out, name: options.name, pack: options.pack,
     });
   }
-  throw new Error(`Unknown sink '${sink}'. Use 'file' or 'git'.`);
+  if (sink === 'registry') {
+    return registrySink(areaRef, {
+      cwd, gameRoot, namespace, area,
+      force: options.force, keepSidecars: options.keepSidecars,
+      pack: options.pack, name: options.name,
+      bump: options.bump,
+      registryUrl: options.registryUrl,
+    });
+  }
+  throw new Error(`Unknown sink '${sink}'. Use 'file', 'git', or 'registry'.`);
 }
 
 module.exports = { harvest };

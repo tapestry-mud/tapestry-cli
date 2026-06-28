@@ -3,6 +3,7 @@
 jest.mock('../../src/lib/git', () => ({ isRepo: jest.fn(() => true), commitAll: jest.fn() }));
 jest.mock('../../src/commands/sync-area', () => ({ syncArea: jest.fn(), exportArea: jest.fn() }));
 jest.mock('../../src/lib/file-sink', () => ({ fileSink: jest.fn(() => Promise.resolve('/out/x.tgz')) }));
+jest.mock('../../src/lib/registry-sink', () => ({ registrySink: jest.fn(() => Promise.resolve()) }));
 
 const fs = require('fs');
 const os = require('os');
@@ -11,6 +12,7 @@ const { writeYaml } = require('../../src/util/yaml');
 const { isRepo } = require('../../src/lib/git');
 const { syncArea } = require('../../src/commands/sync-area');
 const { fileSink } = require('../../src/lib/file-sink');
+const { registrySink } = require('../../src/lib/registry-sink');
 const { harvest } = require('../../src/commands/harvest');
 
 let tmp;
@@ -19,6 +21,7 @@ beforeEach(() => {
   isRepo.mockReturnValue(true);
   syncArea.mockReset();
   fileSink.mockReset().mockResolvedValue('/out/x.tgz');
+  registrySink.mockReset();
 });
 afterEach(() => { fs.rmSync(tmp, { recursive: true, force: true }); });
 
@@ -62,4 +65,12 @@ it('throws on an unknown sink', async () => {
   seedSideCar();
   await expect(harvest('legends-forgotten:lf-hollow', { cwd: tmp, gameRoot: tmp, sink: 'ftp' }))
     .rejects.toThrow(/unknown sink/i);
+});
+
+it('routes to registrySink when --sink registry is explicit', async () => {
+  seedSideCar();
+  await harvest('legends-forgotten:lf-hollow', { cwd: tmp, gameRoot: tmp, sink: 'registry' });
+  expect(registrySink).toHaveBeenCalledTimes(1);
+  expect(syncArea).not.toHaveBeenCalled();
+  expect(fileSink).not.toHaveBeenCalled();
 });

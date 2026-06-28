@@ -411,15 +411,15 @@ async function runHarvest(areaRef, opts) {
 program
   .command('harvest <areaRef>')
   .description('Harvest an authored area into a portable pack (areaRef = namespace:area-id)')
-  .option('--sink <sink>', 'Output sink: file | git (auto-detected by default)')
+  .option('--sink <sink>', 'Output sink: file | git | registry (auto-detected by default)')
   .option('--out <path>', '(file sink) where the .tgz lands')
-  .option('--name <name>', '(file sink) override the synthesized pack name (@scope/pack)')
+  .option('--name <name>', '(file/registry sink) override the synthesized pack name (@scope/pack)')
   .option('--pack <dir>', 'Target pack directory (auto-detected from linked packs by default)')
   .option('--game-root <path>', 'Game root containing data/ (default: current dir)')
   .option('--keep-sidecars', 'Copy instead of move (leave the game-root side-cars in place)')
   .option('--force', 'Overwrite pack files that diverge from the side-car')
-  .option('--minor', 'Bump the pack minor version (git sink only; default: patch)')
-  .option('--major', 'Bump the pack major version (git sink only; default: patch)')
+  .option('--minor', 'Bump the pack minor version (git/registry sink, owned pack only; default: patch)')
+  .option('--major', 'Bump the pack major version (git/registry sink, owned pack only; default: patch)')
   .action(runHarvest);
 
 // Deprecated: sync-area is now harvest --sink git.
