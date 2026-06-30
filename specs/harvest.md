@@ -1,6 +1,6 @@
 ---
 capability: harvest
-last-updated: 2026-06-13
+last-updated: 2026-06-29
 ---
 
 # harvest
@@ -16,9 +16,11 @@ This capability covers two closely related concerns:
    command is the user-facing view of this classification.
 
 2. **Harvest** -- promoting authored area content from the game-root side-car tree into a
-   pack. Two sinks exist: the `git` sink renders the content into a linked pack repository,
+   pack. Three sinks exist: the `git` sink renders the content into a linked pack repository,
    bumps the pack version, and commits; the `file` sink renders into a temp build directory
-   and produces a portable `.tgz` at the current version without bumping.
+   and produces a portable `.tgz` at the current version without bumping; the `registry` sink
+   renders, tars, and publishes straight to the registry from the machine where the token
+   lives, refusing when the linked pack is a git repo (the source-of-truth gate).
 
 The `sync-area` command is a deprecated alias for `harvest --sink git`. The `export-area`
 command is a hidden deprecated alias for the same.
@@ -69,11 +71,11 @@ directory. (src/commands/status.js:5)
 
 `harvest` auto-detects the sink when `--sink` is not given: it calls `resolvePackDirOrNull`
 for the area's namespace; if exactly one linked pack matches AND that directory is a git repo,
-the git sink is used; otherwise the file sink is used.
-(src/commands/harvest.js:15-19)
+the git sink is used; otherwise the file sink is used. Auto-detect never selects the registry
+sink; `registry` must be requested explicitly. (src/commands/harvest.js:16-20)
 
-With `--sink git` or `--sink file`, the choice is explicit; any other value throws.
-(src/commands/harvest.js:20-33)
+With `--sink git`, `--sink file`, or `--sink registry`, the choice is explicit; any other value
+throws. (src/commands/harvest.js:22-43)
 
 ### Harvest -- git sink (`sync-area`)
 
@@ -122,7 +124,41 @@ current version. (src/lib/file-sink.js:19-21)
 - `--name <@scope/pack>` overrides the synthesized pack name (file sink only; only
   meaningful when no linked pack is found). (src/lib/file-sink.js:36)
 
-### renderArea (shared by both sinks)
+### Harvest -- registry sink
+
+The registry sink renders, tars, and POSTs the pack to the registry's `/v1/publish`. It is
+meant to run on the machine where the registry token lives (an operator box or a no-git
+server). (src/lib/registry-sink.js:17-28)
+
+- **Source-of-truth gate.** If a linked pack resolves for the namespace AND that directory is
+  a git repo, the sink throws and points the operator at the file sink + repo + CI workflow
+  instead. A non-git owned pack and the no-linked-pack hobbyist case both proceed.
+  (src/lib/registry-sink.js:37-44)
+- **Owned (non-git linked pack)** mirrors the git sink. It asserts the pack namespace matches
+  the area, fails loudly if the pack directory is not writable (a pre-check before any
+  mutation, never a silent EACCES), renders the area INTO the real pack directory so content
+  accumulates across repeated harvests, then bumps `pack.yaml` (patch by default; `--minor` /
+  `--major`). (src/lib/registry-sink.js:52-69)
+- **Hobbyist (no linked pack)** mirrors the file sink: synthesize a minimal `pack.yaml` (0.1.0,
+  name derived from the namespace or `--name`) into a temp build directory and render the area
+  there; no persistent bump. (src/lib/registry-sink.js:70-77)
+- Builds a `.tgz` from the build directory (the real pack dir when owned, the temp dir when
+  hobbyist), computes its integrity, then obtains a token via `requireAccess()` only -- no OIDC
+  detection. (src/lib/registry-sink.js:79-85)
+- POSTs multipart `tarball` + `metadata` JSON (manifest plus `integrity`) with an
+  `Authorization: Bearer <token>` header to the registry's `/v1/publish`. The target defaults
+  to `DEFAULT_REGISTRY`; an internal `registryUrl` option override exists for tests, with no
+  CLI flag. A non-2xx response throws and side-cars are left intact.
+  (src/lib/registry-sink.js:33) (src/lib/registry-sink.js:87-99)
+- On success, removes side-cars unless `--keep-sidecars` is set, then prints
+  `Harvested area '<area>' and published <name>@<version>.` and a line telling the operator to
+  run `tapestry update` on the game server. (src/lib/registry-sink.js:102-106)
+- The temp build dir and the temp `.tgz` are always cleaned up in a `finally` block.
+  (src/lib/registry-sink.js:107-114)
+- There is no `--out` for the registry sink (it never writes a file to disk).
+  (src/commands/harvest.js:34-42)
+
+### renderArea (shared by all sinks)
 
 - Reads room YAML files from `<gameRoot>/data/areas/<area>/rooms/*.yaml`.
   Throws if the directory is absent or empty. (src/lib/render-core.js:13-20)
@@ -164,6 +200,4 @@ empty. `area.yaml` in the game root is also deleted. (src/lib/render-core.js:69-
 
 ## Change Log
 
-- 2026-06-23 (0.11.0): renderArea carries oracle table side-cars (places-oracle.yaml, *-oracle-table.yaml)
-  and mints mob/item instance files (mobs/*.yaml, items/*.yaml) into the target pack alongside
-  area.yaml and rooms/. CONTENT_GLOBS gains oracle_tables, places_oracle, mobs, items.
+- 2026-06-29 [harvest-registry-sink](changes/2026-06-29-harvest-registry-sink.md)
