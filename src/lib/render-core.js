@@ -163,7 +163,8 @@ function assertNamespaceMatch(manifest, namespace, packDir) {
   if (destNamespace !== namespace) {
     throw new Error(
       `Pack namespace '${destNamespace}' does not match area namespace '${namespace}'. ` +
-      'harvest only commits an area back into its own pack; not-owned content forks (a later slice).');
+      'harvest only commits an area back into its own pack; not-owned content forks ' +
+      '(log in with \'tapestry login\' to enable forking).');
   }
 }
 
