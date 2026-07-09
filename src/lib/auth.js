@@ -44,6 +44,17 @@ function decodeExp(jwtString) {
   }
 }
 
+// Decode the `scopes` claim from a JWT payload - unverified, same trust model as decodeExp.
+// Returns the array, or null on a malformed token or a missing/non-array claim.
+function decodeScopes(jwtString) {
+  try {
+    const payload = JSON.parse(Buffer.from(jwtString.split('.')[1], 'base64url').toString('utf8'));
+    return Array.isArray(payload.scopes) ? payload.scopes : null;
+  } catch {
+    return null;
+  }
+}
+
 async function loadAccess() {
   const s = readSession();
   if (!s || !s.access || !s.refresh) {
@@ -79,6 +90,6 @@ async function requireAccess() {
 
 module.exports = {
   RC_PATH, DEFAULT_REGISTRY,
-  readSession, saveSession, clearSession, decodeExp,
+  readSession, saveSession, clearSession, decodeExp, decodeScopes,
   loadAccess, requireAccess,
 };

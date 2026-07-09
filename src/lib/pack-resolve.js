@@ -3,6 +3,7 @@
 const path = require('path');
 const { readYaml } = require('../util/yaml');
 const { readLinks } = require('./links');
+const { readSession, decodeScopes } = require('./auth');
 
 // "namespace:area-id" -> { namespace, area }. Throws on a malformed ref.
 function parseAreaRef(areaRef) {
@@ -64,4 +65,31 @@ function resolvePackDirOrNull(cwd, namespace, explicitPack) {
   return matches.length === 1 ? matches[0] : null;
 }
 
-module.exports = { parseAreaRef, packNamespace, findPackMatches, detectPackDir, resolvePackDirOrNull };
+// Whether a namespace is owned by the given operator scope (SA5 prefix rule): exact match, or
+// the namespace is scope-prefixed with a following dash. 'tapestry-core' is owned by scope
+// 'tapestry'; 'my-org-core' is owned by scope 'my-org' (a hyphenated handle) - do NOT extract
+// a scope from the namespace by splitting on the first dash, that misclassifies every
+// hyphenated handle's own content as a fork (SA5). The namespace flattening is lossy by
+// construction (@my/org-core and @my-org/core both map to namespace 'my-org-core'), so scope
+// 'my' also reads as owning 'my-org-core' - an accepted residual (SA5), not a defect.
+function isOwnedNamespace(namespace, scope) {
+  return namespace === scope || namespace.startsWith(scope + '-');
+}
+
+// The operator's registry scope (account handle), decoded from the local auth session - the
+// same ~/.tapestryrc session requireAccess() reads for publish. Returns the first entry of
+// the access token's `scopes` claim, or null if there is no session, no access token, or no
+// scopes claim. Durable across `tapestry link`/`unlink`: never touches tapestry-links.yaml.
+function resolveOperatorScope() {
+  const session = readSession();
+  if (!session || !session.access) {
+    return null;
+  }
+  const scopes = decodeScopes(session.access);
+  return (scopes && scopes[0]) || null;
+}
+
+module.exports = {
+  parseAreaRef, packNamespace, findPackMatches, detectPackDir, resolvePackDirOrNull,
+  isOwnedNamespace, resolveOperatorScope,
+};

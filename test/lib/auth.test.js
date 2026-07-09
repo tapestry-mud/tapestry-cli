@@ -1,7 +1,7 @@
 'use strict';
 
 const fs = require('fs');
-const { saveSession, clearSession, loadAccess, requireAccess, decodeExp, RC_PATH } = require('../../src/lib/auth');
+const { saveSession, clearSession, loadAccess, requireAccess, decodeExp, decodeScopes, RC_PATH } = require('../../src/lib/auth');
 
 // A JWT whose payload is {exp}. Signature is irrelevant to the CLI (it never verifies).
 function fakeJwt(payload) {
@@ -17,6 +17,19 @@ describe('decodeExp', () => {
   });
   it('returns null on a malformed token', () => {
     expect(decodeExp('garbage')).toBeNull();
+  });
+});
+
+describe('decodeScopes', () => {
+  it('reads the scopes claim from a JWT', () => {
+    expect(decodeScopes(fakeJwt({ sub: 'mallek', scopes: ['mallek'] }))).toEqual(['mallek']);
+  });
+  it('returns null on a malformed token', () => {
+    expect(decodeScopes('garbage')).toBeNull();
+  });
+  it('returns null when scopes is missing or not an array', () => {
+    expect(decodeScopes(fakeJwt({ sub: 'mallek' }))).toBeNull();
+    expect(decodeScopes(fakeJwt({ sub: 'mallek', scopes: 'mallek' }))).toBeNull();
   });
 });
 
