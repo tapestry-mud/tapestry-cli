@@ -187,10 +187,23 @@ it('fails loudly when the owned pack dir is not writable', async () => {
 it('cleans up the hobbyist temp dir even when renderArea throws', async () => {
   // No linked pack, no side-car - hobbyist path. renderArea throws "No authored rooms found..."
   // because the side-car directory does not exist. The finally block must clean up tmpBuild.
-  const before = fs.readdirSync(os.tmpdir()).filter(n => n.startsWith('tapestry-harvest-'));
-  await expect(registrySink('legends-forgotten:lf-hollow', {
-    cwd: tmp, gameRoot: tmp, namespace: 'legends-forgotten', area: 'lf-hollow',
-  })).rejects.toThrow(/No authored rooms found/);
-  const after = fs.readdirSync(os.tmpdir()).filter(n => n.startsWith('tapestry-harvest-'));
-  expect(after.length).toBe(before.length);
+  // Capture the exact dir this call creates instead of counting os.tmpdir() entries - a
+  // global count races with parallel jest workers creating their own tapestry-harvest- dirs.
+  const made = [];
+  const realMkdtempSync = fs.mkdtempSync.bind(fs);
+  const spy = jest.spyOn(fs, 'mkdtempSync').mockImplementation((prefix) => {
+    const dir = realMkdtempSync(prefix);
+    made.push(dir);
+    return dir;
+  });
+  try {
+    await expect(registrySink('legends-forgotten:lf-hollow', {
+      cwd: tmp, gameRoot: tmp, namespace: 'legends-forgotten', area: 'lf-hollow',
+    })).rejects.toThrow(/No authored rooms found/);
+  } finally {
+    spy.mockRestore();
+  }
+  const tmpBuilds = made.filter((d) => path.basename(d).startsWith('tapestry-harvest-'));
+  expect(tmpBuilds.length).toBe(1);
+  expect(fs.existsSync(tmpBuilds[0])).toBe(false);
 });
