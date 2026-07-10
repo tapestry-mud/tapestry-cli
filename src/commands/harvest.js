@@ -21,6 +21,9 @@ const { removeSideCars } = require('../lib/render-core');
 const { requireAccess } = require('../lib/auth');
 const { DEFAULT_REGISTRY, throwIfError } = require('../lib/registry-client');
 
+// Same scoped-name shape enforced by schema/manifest.js and unpublish.js.
+const SCOPED_NAME = /^@[a-z0-9-]+\/[a-z0-9-]+$/;
+
 // Umbrella harvest verb. Auto-detects the sink (owned linked pack that is a git repo -> git;
 // else file) unless --sink is explicit.
 //
@@ -43,10 +46,24 @@ async function harvest(areaRef, options = {}) {
 
   if (isFork) {
     if (!options.name) {
+      // No embedded 'error:' prefix - the CLI catch in bin/tapestry.js adds it.
+      // Convention example composes scope + origin PACKAGE (section 3): derive the package
+      // part via namespaceToName, degrading to the raw namespace on a hyphenless edge.
+      let originPkg;
+      try {
+        originPkg = namespaceToName(namespace).split('/')[1];
+      } catch (e) {
+        originPkg = namespace;
+      }
       throw new Error(
-        `error: area '${namespace}:${area}' is a fork target (namespace '${namespace}' is not owned by scope '${operatorScope}').\n` +
+        `area '${namespace}:${area}' is a fork target (namespace '${namespace}' is not owned by scope '${operatorScope}').\n` +
         `  Provide the fork pack name: --name @<scope>/fork-name\n` +
-        `  Convention: @yourscope/${namespace}-fork  (scope + origin-package + "-fork")`
+        `  Convention: @${operatorScope}/${originPkg}-fork  (scope + origin-package + "-fork")`
+      );
+    }
+    if (!SCOPED_NAME.test(options.name)) {
+      throw new Error(
+        `invalid fork pack name '${options.name}' - must match @scope/fork-name.`
       );
     }
     return forkHarvest(areaRef, cwd, gameRoot, namespace, area, options);
@@ -101,7 +118,7 @@ async function forkHarvest(areaRef, cwd, gameRoot, originNamespace, area, option
     }
     throw new Error(
       `cannot determine origin version for '${originNamespace}' - pack not linked.\n` +
-      `Link it first: ${originHint}`
+      `  Link it first: ${originHint}`
     );
   }
   const originManifest = readYaml(path.join(originPackDir, 'pack.yaml')) || {};
@@ -199,7 +216,7 @@ async function forkHarvest(areaRef, cwd, gameRoot, originNamespace, area, option
       if (!forkPackDir || !isRepo(forkPackDir)) {
         throw new Error(
           `git sink for a fork requires the fork pack to be a linked git repo.\n` +
-          `Create the fork pack repo, link it: tapestry link ${forkPackName} <path>, then re-run.`
+          `Create the fork pack repo, link it with 'tapestry link ${forkPackName} <path>', then re-run.`
         );
       }
       const srcAreaDir = path.join(tmpBuild, 'areas', area);

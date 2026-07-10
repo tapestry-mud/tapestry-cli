@@ -189,9 +189,23 @@ it('errors with section-3 message when area is foreign and --name is absent (F1)
   seedForkSideCar();
   seedOriginPack();
   mockOperatorScope('mallek'); // isOwnedNamespace('tapestry-core', 'mallek') -> false -> fork, but no --name
+  // Anchored: no embedded 'error:' prefix (bin/tapestry.js adds it), and the convention
+  // example composes scope + origin PACKAGE ('core'), not the full namespace.
   await expect(harvest('tapestry-core:village-green', {
     cwd: tmp, gameRoot: tmp, keepSidecars: true,
-  })).rejects.toThrow(/fork target/i);
+  })).rejects.toThrow(
+    /^area 'tapestry-core:village-green' is a fork target[\s\S]*Convention: @mallek\/core-fork /
+  );
+  expect(buildForkPack).not.toHaveBeenCalled();
+});
+
+it('errors when --name is not a scoped @scope/fork-name (form validation)', async () => {
+  seedForkSideCar();
+  seedOriginPack();
+  mockOperatorScope('mallek');
+  await expect(harvest('tapestry-core:village-green', {
+    cwd: tmp, gameRoot: tmp, name: 'corefork', keepSidecars: true,
+  })).rejects.toThrow(/must match @scope\/fork-name/);
   expect(buildForkPack).not.toHaveBeenCalled();
 });
 

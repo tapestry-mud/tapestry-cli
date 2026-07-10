@@ -413,7 +413,7 @@ program
   .description('Harvest an authored area into a portable pack (areaRef = namespace:area-id)')
   .option('--sink <sink>', 'Output sink: file | git | registry (auto-detected by default)')
   .option('--out <path>', '(file sink) where the .tgz lands')
-  .option('--name <name>', '(file/registry sink, fork) target pack name (@scope/pack, or @scope/fork-name for fork)')
+  .option('--name <name>', '(file/registry sink, fork) target pack name (@scope/fork-name)')
   .option('--pack <dir>', 'Target pack directory (auto-detected from linked packs by default)')
   .option('--game-root <path>', 'Game root containing data/ (default: current dir)')
   .option('--keep-sidecars', 'Copy instead of move (leave the game-root side-cars in place)')
