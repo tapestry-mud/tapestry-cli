@@ -76,15 +76,18 @@ function rekeyArea(buildDir, originNamespace, forkNamespace) {
 // side-car content into buildDir, re-key all IDs from originNamespace to forkNamespace,
 // ensure content globs. buildDir must not exist yet (or be empty).
 // originPackName is the authoritative pack name from the origin's pack.yaml (F5: not derived).
+// originLicense is the origin pack's license (a fork inherits it; MIT fallback when absent).
 // Returns { forkNamespace, files, version } where files is the room yaml filename list from
 // renderArea and version is always '0.1.0' (fork starts fresh).
 function buildForkPack(buildDir, {
   gameRoot, area,
-  originNamespace, originVersion, originPackName,
+  originNamespace, originVersion, originPackName, originLicense,
   forkPackName, force,
 }) {
   const forkNamespace = packNamespace(forkPackName);
   const forkPkgPart = forkPackName.split('/')[1] || forkNamespace;
+  // author is the operator's own scope (schema-required, same as the owned/synthesized path).
+  const forkScope = forkPackName.replace(/^@/, '').split('/')[0];
 
   fs.mkdirSync(buildDir, { recursive: true });
 
@@ -94,6 +97,12 @@ function buildForkPack(buildDir, {
     type: 'world',
     display_name: titleCase(forkPkgPart),
     description: 'derivative of ' + originPackName + '@' + originVersion,
+    // A fork is a derivative: inherit the origin's license (a fork of AGPL content stays AGPL),
+    // falling back to MIT only when the origin declares none. Both fields are required by the
+    // manifest schema, so a fork that omitted them would fail `tapestry validate` (unlike the
+    // owned harvest path, which synthesizes author/license in pack-manifest.js).
+    author: forkScope,
+    license: originLicense || 'MIT',
     engine: '>=0.1.0',
     validation: 'strict',
     dependencies: { [originPackName]: caretMinor(originVersion) },

@@ -133,10 +133,13 @@ async function forkHarvest(areaRef, cwd, gameRoot, originNamespace, area, option
   try {
     // F2: buildForkPack returns version directly; no disk re-read needed.
     // F5: pass originManifest.name (authoritative) instead of deriving via namespaceToName.
+    // A fork is a derivative, so it inherits the origin's license (MIT fallback) - both
+    // author and license are schema-required, and the fork manifest must carry them to validate.
     const { forkNamespace, files, version: forkVersion } = buildForkPack(tmpBuild, {
       gameRoot, area,
       originNamespace, originVersion,
       originPackName: originManifest.name,
+      originLicense: originManifest.license,
       forkPackName, force: options.force,
     });
 

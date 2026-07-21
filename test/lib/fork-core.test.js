@@ -213,4 +213,34 @@ describe('buildForkPack', () => {
     expect(manifest.dependencies['@my-org/core']).toBe('^2.0.0');
     expect(manifest.description).toBe('derivative of @my-org/core@2.0.0');
   });
+
+  it('sets author to the fork scope and inherits the origin license (a fork is a derivative)', () => {
+    seedSideCar();
+    const buildDir = path.join(tmp, 'fork-build');
+    buildForkPack(buildDir, {
+      gameRoot: tmp, area: 'village-green',
+      originNamespace: 'tapestry-core', originVersion: '1.2.3',
+      originPackName: '@tapestry/core', originLicense: 'AGPL-3.0',
+      forkPackName: '@mallek/core-fork',
+    });
+    const manifest = readYaml(path.join(buildDir, 'pack.yaml'));
+    // author is the operator's own scope (schema-required; owned path does the same).
+    expect(manifest.author).toBe('mallek');
+    // A fork of AGPL content stays AGPL - inherit the origin's license, do NOT default MIT.
+    expect(manifest.license).toBe('AGPL-3.0');
+  });
+
+  it('falls back to MIT when the origin declares no license', () => {
+    seedSideCar();
+    const buildDir = path.join(tmp, 'fork-build');
+    buildForkPack(buildDir, {
+      gameRoot: tmp, area: 'village-green',
+      originNamespace: 'tapestry-core', originVersion: '1.2.3',
+      originPackName: '@tapestry/core', // no originLicense
+      forkPackName: '@mallek/core-fork',
+    });
+    const manifest = readYaml(path.join(buildDir, 'pack.yaml'));
+    expect(manifest.author).toBe('mallek');
+    expect(manifest.license).toBe('MIT');
+  });
 });
