@@ -66,15 +66,17 @@ function dockerEnsureImage(image, version) {
   }
 }
 
-function dockerStart(projectName, image, version, packsDir, serverYamlPath, dataDir, network, linkMounts = [], envFile = null) {
+function dockerStart(projectName, image, version, packsDir, serverYamlPath, dataDir, network, linkMounts = [], envFile = null, hostPorts = null) {
+  const telnetPort = (hostPorts && hostPorts.telnet) || 4000;
+  const websocketPort = (hostPorts && hostPorts.websocket) || 4001;
   const containerName = `tapestry-${projectName}`;
   dockerEnsureImage(image, version);
   spawnSync('docker', ['rm', '-f', containerName], { stdio: 'ignore' });
   const args = [
     'run', '--detach',
     '--name', containerName,
-    '-p', '4000:4000',
-    '-p', '4001:4001',
+    '-p', `${telnetPort}:4000`,
+    '-p', `${websocketPort}:4001`,
     '-v', `${packsDir}:/app/packs`,
     '-v', `${serverYamlPath}:/app/server.yaml`,
     '-v', `${dataDir}:/app/data`,
@@ -94,8 +96,8 @@ function dockerStart(projectName, image, version, packsDir, serverYamlPath, data
     );
   }
   console.log(`Engine started. Container: ${containerName}`);
-  console.log('  Telnet:    telnet localhost 4000');
-  console.log('  WebSocket: ws://localhost:4001');
+  console.log(`  Telnet:    telnet localhost ${telnetPort}`);
+  console.log(`  WebSocket: ws://localhost:${websocketPort}`);
 }
 
 function dockerStop(projectName) {
@@ -272,6 +274,10 @@ function readEngineConfig(cwd) {
     image: engine.image || DEFAULT_IMAGE,
     network: engine.network || null,
     envFile: engine.env_file || null,
+    hostPorts: {
+      telnet: (engine.host_ports && engine.host_ports.telnet) || 4000,
+      websocket: (engine.host_ports && engine.host_ports.websocket) || 4001,
+    },
     installDir: path.join(cwd, '.tapestry-engine'),
     projectName: (manifest.name || 'tapestry').toLowerCase().replace(/[^a-z0-9-]+/g, '-'),
   };
@@ -338,7 +344,7 @@ async function startEngine(cwd) {
         );
       }
     }
-    dockerStart(config.projectName, config.image, tag, packsDir, serverYamlPath, dataDir, config.network, dockerLinkMounts(cwd), envFile);
+    dockerStart(config.projectName, config.image, tag, packsDir, serverYamlPath, dataDir, config.network, dockerLinkMounts(cwd), envFile, config.hostPorts);
   } else if (config.mode === 'binary') {
     materializeLinks(cwd);
     binaryStart(config.version, config.installDir, packsDir, serverYamlPath, cwd);

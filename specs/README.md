@@ -13,7 +13,7 @@ behave?" from the relevant file alone.
 | validate | [validate.md](validate.md) | 2026-06-13 |
 | harvest | [harvest.md](harvest.md) | 2026-06-29 |
 | registry-auth | [registry-auth.md](registry-auth.md) | 2026-06-13 |
-| engine-management | [engine-management.md](engine-management.md) | 2026-06-13 |
+| engine-management | [engine-management.md](engine-management.md) | 2026-07-23 |
 
 ## Contract summary
 

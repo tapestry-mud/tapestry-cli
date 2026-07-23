@@ -1,6 +1,6 @@
 ---
 capability: engine-management
-last-updated: 2026-06-13
+last-updated: 2026-07-23
 ---
 
 # engine-management
@@ -33,6 +33,9 @@ Derived values from `readEngineConfig`: (src/lib/engine-manager.js:248-278)
 - `image` defaults to `ghcr.io/tapestry-mud/tapestry` if not specified.
 - `network` is null if not specified.
 - `envFile` is null if not specified (`engine.env_file`).
+- `hostPorts` is `{ telnet: 4000, websocket: 4001 }` unless overridden by
+  `engine.host_ports.telnet` / `engine.host_ports.websocket` (docker mode only;
+  either key may be set independently). (src/lib/engine-manager.js:269-278)
 - `installDir` is always `<cwd>/.tapestry-engine`.
 - `projectName` is the manifest `name` lowercased and with non-alphanumeric/hyphen characters
   replaced by `-`.
@@ -96,9 +99,10 @@ Updated columns. Prints "No engine channels registered." if the list is empty.
   (src/lib/engine-manager.js:321-327)
 - Creates `data/` directory if absent. (src/lib/engine-manager.js:328)
 - **docker mode**: Calls `docker rm -f <containerName>` to clear any stale container, then
-  `docker run --detach` with port mappings `-p 4000:4000 -p 4001:4001`, volume mounts for
-  `packs/`, `server.yaml`, and `data/`, optional `--network` and `--env-file`, and any link
-  mounts from `dockerLinkMounts`. (src/lib/engine-manager.js:69-99)
+  `docker run --detach` with port mappings `-p <hostPorts.telnet>:4000 -p <hostPorts.websocket>:4001`
+  (default `4000:4000`/`4001:4001`, overridable via `engine.host_ports` -- see Configuration),
+  volume mounts for `packs/`, `server.yaml`, and `data/`, optional `--network` and `--env-file`,
+  and any link mounts from `dockerLinkMounts`. (src/lib/engine-manager.js:69-100)
 - **binary mode**: Materializes links into `packs/`, spawns the engine binary detached, and
   writes the PID to `.tapestry.pid`. (src/lib/engine-manager.js:154-171)
   (src/lib/process-tracker.js:8-10)
@@ -137,4 +141,4 @@ Updated columns. Prints "No engine channels registered." if the list is empty.
 
 ## Change Log
 
-- None on record.
+- 2026-07-23 [docker-host-ports](changes/2026-07-23-docker-host-ports.md)

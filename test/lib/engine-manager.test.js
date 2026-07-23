@@ -292,6 +292,38 @@ describe('docker mode', () => {
       await expect(startEngine(tmpDir)).rejects.toThrow('docker run failed');
     });
 
+    it('publishes overridden host ports when engine.host_ports is set', async () => {
+      writeYaml(path.join(tmpDir, 'tapestry.yaml'), {
+        name: 'my-game',
+        engine: {
+          version: '3.1.0', mode: 'docker',
+          host_ports: { telnet: 4010, websocket: 4011 },
+        },
+      });
+      await startEngine(tmpDir);
+      const runCall = spawnSync.mock.calls.find(c => c[1] && c[1].includes('run'));
+      const args = runCall[1];
+      expect(args).toContain('4010:4000');
+      expect(args).toContain('4011:4001');
+      expect(args).not.toContain('4000:4000');
+      expect(args).not.toContain('4001:4001');
+    });
+
+    it('supports overriding just one of the two host ports', async () => {
+      writeYaml(path.join(tmpDir, 'tapestry.yaml'), {
+        name: 'my-game',
+        engine: {
+          version: '3.1.0', mode: 'docker',
+          host_ports: { telnet: 4010 },
+        },
+      });
+      await startEngine(tmpDir);
+      const runCall = spawnSync.mock.calls.find(c => c[1] && c[1].includes('run'));
+      const args = runCall[1];
+      expect(args).toContain('4010:4000');
+      expect(args).toContain('4001:4001');
+    });
+
     it('passes --network flag when engine.network is set', async () => {
       writeYaml(path.join(tmpDir, 'tapestry.yaml'), {
         name: 'my-game',

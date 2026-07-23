@@ -48,6 +48,10 @@ const ProjectManifestSchema = z.object({
       image: z.string().optional(),
       network: z.string().optional(),
       env_file: z.string().optional(),
+      host_ports: z.object({
+        telnet: z.number().int().positive().optional(),
+        websocket: z.number().int().positive().optional(),
+      }).optional(),
     }),
   ]),
   dependencies: z.record(z.string()).optional(),
