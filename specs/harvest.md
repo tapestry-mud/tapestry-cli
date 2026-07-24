@@ -1,6 +1,6 @@
 ---
 capability: harvest
-last-updated: 2026-06-29
+last-updated: 2026-07-24
 ---
 
 # harvest
@@ -68,6 +68,11 @@ With `--game-root <path>`, reads `data/areas/` from that path instead of the cur
 directory. (src/commands/status.js:5)
 
 ### Harvest -- sink selection
+
+Fork detection runs FIRST, before any sink resolution. If the area's namespace is not owned by
+the operator's scope, the fork path takes over (see Harvest -- fork path); the sink selection
+below applies only to owned content (and to the not-logged-in case, which is never a fork).
+(src/commands/harvest.js)
 
 `harvest` auto-detects the sink when `--sink` is not given: it calls `resolvePackDirOrNull`
 for the area's namespace; if exactly one linked pack matches AND that directory is a git repo,
@@ -158,6 +163,46 @@ server). (src/lib/registry-sink.js:17-28)
 - There is no `--out` for the registry sink (it never writes a file to disk).
   (src/commands/harvest.js:34-42)
 
+### Harvest -- fork path
+
+When the area's namespace is not owned by the operator, harvest re-keys the not-owned content
+into the operator's own pack (a derivative), records provenance, and declares a dependency on
+the origin. This runs before sink selection. (src/commands/harvest.js)
+
+- **Ownership by scope, not link-presence.** `resolveOperatorScope` decodes the operator's
+  registry scope from the local auth session (`~/.tapestryrc`, the same session the registry
+  sink authenticates with); it never reads `tapestry-links.yaml`, so it survives `link` /
+  `unlink`. An area is owned iff `isOwnedNamespace(namespace, scope)` -- the namespace equals
+  the scope or starts with `<scope>-`. A hyphenated handle (`my-org`) owns `my-org-core`; the
+  scope is never derived by splitting the namespace on its first dash.
+  (src/lib/pack-resolve.js) (src/commands/harvest.js)
+- **Not logged in -> never a fork.** When no operator scope is known, the shipped dispatch is
+  preserved exactly: no linked pack routes to the file sink, a linked pack to its auto-detect.
+  Forking foreign content requires the scope to be known; it is never guessed from link-presence.
+  (src/commands/harvest.js)
+- **`--name` required.** A fork needs `--name @scope/fork-name`; absent it, harvest exits with
+  the convention hint (`@<scope>/<origin-package>-fork`) and writes nothing. A `--name` that is
+  not a valid `@scope/name` is rejected rather than degrading to an `undefined-<version>.tgz`.
+  (src/commands/harvest.js)
+- **Origin version + provenance.** The origin version is read from the linked origin pack;
+  harvest errors with a link hint when the origin is not linked. `buildForkPack` writes a fork
+  `pack.yaml`: `description: derivative of @origin/pack@<version>`, and
+  `dependencies: { "@origin/pack": "^<major>.<minor>.0" }` (patch zeroed). (src/lib/fork-core.js)
+  (src/commands/harvest.js)
+- **Re-key.** `rekeyArea` walks every `*.yaml` under `areas/` and rewrites each string value
+  that starts with `originNamespace:` to the fork namespace (a prefix rewrite via `startsWith` +
+  slice, so prose that merely mentions the namespace is untouched). Reference-awareness for
+  cross-pack references to un-forked origin content is deferred to a later slice.
+  (src/lib/fork-core.js)
+- **author + license.** The fork manifest carries `author` (the operator's scope) and inherits
+  the origin pack's `license` (MIT fallback), so a fork validates like an owned harvest; a fork
+  of AGPL content stays AGPL. (src/lib/fork-core.js)
+- **Sinks.** The file sink tars the built fork directory (`<shortName>-0.1.0.tgz`). The registry
+  sink tars and POSTs, with the source-of-truth gate refusing a fork whose pack is a linked git
+  repo. The git sink renders into the linked fork repo, bumps, and commits, and requires the
+  fork pack to be a linked git repo. Side-cars are removed after success unless `--keep-sidecars`.
+  (src/commands/harvest.js)
+
 ### renderArea (shared by all sinks)
 
 - Reads room YAML files from `<gameRoot>/data/areas/<area>/rooms/*.yaml`.
@@ -200,4 +245,5 @@ empty. `area.yaml` in the game root is also deleted. (src/lib/render-core.js:69-
 
 ## Change Log
 
+- 2026-07-24 [harvest-fork-path](changes/2026-07-24-harvest-fork-path.md)
 - 2026-06-29 [harvest-registry-sink](changes/2026-06-29-harvest-registry-sink.md)
